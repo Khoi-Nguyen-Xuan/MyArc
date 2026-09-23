@@ -1,0 +1,84 @@
+.topbar-top,
+.topbar-bottom {
+  background-image:
+    linear-gradient(180deg, rgba(16,12,8,0.66), rgba(8,6,4,0.8)),
+    url('/assets/wood-header.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #3E3223;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar-top {
+  height: 68px;
+  padding: 0 40px;
+  border-bottom: 4px solid #0E0C09;
+  box-shadow: 0 2px 0 #3A3226;
+}
+
+.topbar-top::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-image: url('/assets/gold-rule.jpg');
+  background-size: cover;
+  background-repeat: repeat-x;
+  box-shadow: 0 0 6px rgba(176,141,79,0.4);
+}
+
+.topbar-bottom {
+  padding: 16px 40px;
+  border-top: 3px solid #0E0C09;
+}
+
+.topbar-side {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spark {
+  color: #8A7245;
+  font-size: 15px;
+}
+
+.logo-text {
+  font-size: 24px;
+  background: linear-gradient(180deg, #C9B183, #8A7245 55%, #4A3A20);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.04em;
+}
+
+.step-dots {
+  display: flex;
+  gap: 7px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  transform: rotate(45deg);
+  border: 1px solid #B0A488;
+}
+
+.dot-active {
+  background: #8A7245;
+  border: none;
+}

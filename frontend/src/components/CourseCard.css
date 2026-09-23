@@ -1,0 +1,86 @@
+.course-card {
+  border: 1px solid #453B2C;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.course-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.course-code {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1A1408;
+}
+
+.course-title {
+  font-size: 12px;
+  color: #342A17;
+  margin-top: 2px;
+}
+
+.status-done {
+  color: #1D2E0C;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  color: #423212;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #453B2C;
+  padding: 9px 12px;
+  background: rgba(0,0,0,0.35);
+}
+
+.file-name {
+  font-size: 12px;
+  flex-grow: 1;
+  color: #C3B99C;
+}
+
+.reupload-link {
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.progress-block {
+  width: 100%;
+}
+
+.progress-track {
+  height: 5px;
+  background: rgba(0,0,0,0.4);
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #8A6B33;
+}
+
+.progress-caption {
+  font-size: 11px;
+  color: #342A17;
+}

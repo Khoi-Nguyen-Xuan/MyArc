@@ -1,0 +1,83 @@
+.chapter-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #B7AC90;
+  text-transform: uppercase;
+}
+
+.create-center {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.create-card-wrap {
+  width: 660px;
+  max-width: 100%;
+  position: relative;
+}
+
+.create-tag {
+  position: absolute;
+  top: -15px;
+  left: 44px;
+  z-index: 2;
+}
+
+.create-panel {
+  padding: 7px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.65);
+}
+
+.create-title {
+  font-size: 29px;
+  font-weight: 700;
+  color: #2A2118;
+  margin-bottom: 10px;
+}
+
+.create-subtitle {
+  font-size: 13px;
+  color: #5E5442;
+  margin: 0 0 32px 0;
+  line-height: 1.55;
+  max-width: 460px;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.create-row {
+  display: flex;
+  gap: 28px;
+}
+.create-row > * {
+  flex: 1;
+}
+
+.create-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 38px;
+}
+
+.cancel-link {
+  font-size: 13px;
+  color: #6B5D42;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.footer-note {
+  text-align: center;
+  padding-bottom: 22px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #B7AC90;
+}

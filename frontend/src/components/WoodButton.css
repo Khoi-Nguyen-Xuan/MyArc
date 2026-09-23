@@ -1,0 +1,71 @@
+.btn-wood {
+  background-image:
+    linear-gradient(180deg, rgba(30,22,14,0.15), rgba(18,13,8,0.23)),
+    url('/assets/wood-button.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #9D9179;
+}
+
+.btn-cta {
+  position: relative;
+  color: #241D10;
+  border: 1px solid #6E5A34;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.3);
+  padding: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-family: 'Cinzel', serif;
+
+  border-top: 1px solid rgba(255,230,180,0.4);
+  border-bottom: 1px solid rgba(0,0,0,0.6);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-cta::before,
+.btn-cta::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  pointer-events: none;
+}
+.btn-cta::before {
+  left: 4px;
+  border-top: 1.5px solid rgba(224,194,138,0.75);
+  border-left: 1.5px solid rgba(224,194,138,0.75);
+}
+.btn-cta::after {
+  right: 4px;
+  border-top: 1.5px solid rgba(224,194,138,0.75);
+  border-right: 1.5px solid rgba(224,194,138,0.75);
+}
+.btn-cta:hover {
+  filter: brightness(1.14);
+  box-shadow: 0 5px 14px rgba(0,0,0,0.6), 0 0 18px rgba(217,185,122,0.5), inset 0 0 0 1px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,244,220,0.18);
+  transform: translateY(-2px);
+}
+.btn-cta:active {
+  transform: translateY(0);
+  filter: brightness(0.94);
+}
+
+.tag-pill {
+  color: #342A17;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 6px 20px;
+  text-transform: uppercase;
+  clip-path: polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(138,114,69,0.4);
+}

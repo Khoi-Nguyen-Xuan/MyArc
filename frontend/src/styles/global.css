@@ -1,0 +1,96 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: #151310;
+  color: #C7BFAE;
+}
+
+h1, h2, h3 {
+  font-family: 'Cinzel', serif;
+  margin: 0;
+}
+
+.wordmark {
+  font-family: 'Cinzel Decorative', serif;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+a {
+  color: #8A7245;
+  text-decoration: none;
+}
+
+input {
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.bg-ambient {
+  background-image:
+    linear-gradient(180deg, rgba(8,7,6,0.55), rgba(5,4,3,0.72)),
+    url('/assets/stone-ambient.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #322C25;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.gold-underline {
+  position: relative;
+}
+.gold-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-image: url('/assets/gold-rule.jpg');
+  background-size: cover;
+  background-repeat: repeat-x;
+  box-shadow: 0 0 6px rgba(176,141,79,0.35);
+}
+
+.hover-glow {
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+.hover-glow:hover {
+  box-shadow: 0 0 14px rgba(217,185,122,0.55);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: rgba(0,0,0,0.2);
+  border: 1.5px solid #6B5D42;
+  color: #C7BFAE;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+.btn-outline:hover {
+  background: rgba(176,141,79,0.14);
+  border-color: #8A7245;
+  box-shadow: 0 0 12px rgba(176,141,79,0.35);
+  transform: translateY(-1px);
+}
+.btn-outline:active {
+  transform: translateY(0);
+  background: rgba(176,141,79,0.22);
+}
+
+.corner {
+  position: absolute;
+  pointer-events: none;
+}

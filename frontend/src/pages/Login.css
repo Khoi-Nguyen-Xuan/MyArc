@@ -1,0 +1,103 @@
+.chapter-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #B7AC90;
+  text-transform: uppercase;
+}
+
+.login-center {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-card-wrap {
+  width: 480px;
+  max-width: 100%;
+  position: relative;
+}
+
+.login-tag {
+  position: absolute;
+  top: -15px;
+  left: 44px;
+  z-index: 2;
+}
+
+.login-panel {
+  padding: 7px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.65);
+}
+
+.login-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #2A2118;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-size: 12.5px;
+  color: #5E5442;
+  margin: 0 0 30px 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.forgot-link {
+  font-size: 11px;
+  text-decoration: underline;
+  color: #6B5D42;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 26px;
+}
+
+.sso-btn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #2A2118;
+  border-color: #6B5D42;
+  background: rgba(255,252,244,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Cinzel', serif;
+}
+
+.signup-line {
+  text-align: center;
+  font-size: 12px;
+  color: #6B5D42;
+  margin-top: 26px;
+}
+
+.signup-link {
+  text-decoration: underline;
+  font-weight: 600;
+  color: #5E4826;
+}
+
+.footer-note {
+  text-align: center;
+  padding-bottom: 22px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #B7AC90;
+}
