@@ -110,7 +110,7 @@ def to_evidence(
         url=page.url,
         title=title,
         source_type=source_type_for(page.url, request.university),
-        published_at=_parse_date(extraction.published_at),
+        published_at=page.published_at or _parse_date(extraction.published_at),  # a real date beats the LLM's reading
     )
     return source, claims
 

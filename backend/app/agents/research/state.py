@@ -12,23 +12,24 @@ from __future__ import annotations
 
 import operator
 from dataclasses import dataclass
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from langchain.chat_models import BaseChatModel
 
 from app.agents.research.schemas import EvidenceClaim, ResearchRequest, ResearchResult, Source
+from app.agents.research.sources import RedditSource
 from app.external.search_client import ExtractedPage, SearchClient, SearchHit
 
 
 @dataclass(frozen=True, slots=True)
 class PlannedQuery:
-    """One web search to run. Hashable => skip already-run searches"""
+    """One search to run. Hashable => skip already-run searches"""
 
     text: str
-    domains: tuple[str, ...] = ()  # restrict results to these sites
+    where: Literal["reddit", "web"] = "web"  # "reddit" runs through the RedditSource, "web" through Tavily
 
     def __str__(self) -> str:
-        return f"{self.text} [{', '.join(self.domains)}]" if self.domains else self.text
+        return f"[{self.where}] {self.text}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,7 +40,6 @@ class ResearchBudget:
     results_per_query: int = 5
     max_pages_per_round: int = 8
     max_chars_per_page: int = 12_000  # long Reddit threads get cut
-    pages_per_read: int = 2  # Reddit blocks more often when many threads are fetched at once
     enough_claims: int = 10  # stop searching early once agent have this many claims
 
 
@@ -53,6 +53,7 @@ class ResearchContext:
 
     search: SearchClient
     llm: BaseChatModel
+    reddit: RedditSource  # Reddit API, or Tavily until the API app is approved (see sources.py)
     budget: ResearchBudget = ResearchBudget()
 
 

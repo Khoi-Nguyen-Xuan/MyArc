@@ -4,7 +4,7 @@ The searches are templates, not LLM-written => free, predictablE
 
 The rounds work like this:
 
-- Round 1: targeted searches in the university's subreddit.
+- Round 1: searches in the university's subreddit (Reddit API or Tavily, see sources.py).
 - Round 2: only runs when round 1 found too little (the graph decides that).
   It widens the net to the whole web.
 - Revision pass: when the Critic asks for specific follow-up searches, only
@@ -23,8 +23,6 @@ SUBREDDITS: dict[str, str] = {
     "University of Alberta": "uAlberta",
 }
 
-REDDIT = ("reddit.com",)
-
 
 def plan_queries(
     request: ResearchRequest,
@@ -33,7 +31,7 @@ def plan_queries(
 ) -> list[PlannedQuery]:
     """Return the searches for this round, skipping any that already ran."""
     if request.follow_up_queries:
-        candidates = [PlannedQuery(text) for text in request.follow_up_queries]
+        candidates = [PlannedQuery(text, "reddit") for text in request.follow_up_queries]
     elif round_number == 1:
         candidates = _targeted_queries(request)
     else:
@@ -44,14 +42,15 @@ def plan_queries(
 
 def _targeted_queries(request: ResearchRequest) -> list[PlannedQuery]:
     code = request.course_code
-    community = _reddit_community(request)
+    # Without a known subreddit, searches run across all of Reddit, so name the university.
+    scope = "" if subreddit_for(request.university) else f"{request.university} "
 
     queries = [
-        PlannedQuery(f"{community} {code} workload difficulty", REDDIT),
-        PlannedQuery(f"{community} {code} exams assignments advice", REDDIT),
+        PlannedQuery(f'{scope}"{code}"', "reddit"),  # every thread that names the course
+        PlannedQuery(f"{scope}{code} workload difficulty", "reddit"),
     ]
     if request.professor:
-        queries.append(PlannedQuery(f"{community} {code} {request.professor}", REDDIT))
+        queries.append(PlannedQuery(f"{scope}{code} {request.professor}", "reddit"))
     return queries
 
 
@@ -68,10 +67,9 @@ def _broader_queries(request: ResearchRequest) -> list[PlannedQuery]:
     return queries
 
 
-def _reddit_community(request: ResearchRequest) -> str:
-    """Return "r/uAlberta" when we know the subreddit, otherwise the university's name."""
-    subreddit = SUBREDDITS.get(request.university)
-    return f"r/{subreddit}" if subreddit else request.university
+def subreddit_for(university: str) -> str | None:
+    """Return "uAlberta" for the University of Alberta, or None for a school we don't know yet."""
+    return SUBREDDITS.get(university)
 
 
 def _drop_repeats(candidates: list[PlannedQuery], already_run: Iterable[PlannedQuery]) -> list[PlannedQuery]:

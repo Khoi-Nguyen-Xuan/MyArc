@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from typing import Literal
 
 import httpx
@@ -49,8 +50,10 @@ class SearchHit:
 @dataclass(frozen=True, slots=True)
 class ExtractedPage:
     """The readable text of one page, as markdown."""
+
     url: str
     content: str
+    published_at: date | None = None  # known for Reddit API threads; Tavily pages don't have one
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,8 +101,12 @@ class SearchClient:
             for result in response.get("results", [])
         ]
 
-    async def extract(self, urls: Sequence[str]) -> ExtractionBatch:
-        """Fetch the full text of up to 20 pages in one call."""
+    async def extract(self, urls: Sequence[str], *, depth: SearchDepth = "basic") -> ExtractionBatch:
+        """Fetch the full text of up to 20 pages in one call.
+
+        "advanced" gets through sites that block the basic fetcher (Reddit does),
+        at 2 credits per 5 pages instead of 1.
+        """
         if not urls:
             return ExtractionBatch(pages=[], failed_urls=[])
         if len(urls) > MAX_URLS_PER_EXTRACT:
@@ -108,6 +115,7 @@ class SearchClient:
         try:
             response = await self._tavily.extract(
                 urls=list(urls),
+                extract_depth=depth,
                 format="markdown",
                 timeout=self._timeout_seconds,
             )

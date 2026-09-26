@@ -36,6 +36,10 @@ def normalize_url(url: str) -> str:
     return urlunsplit(("https", host, parts.path.rstrip("/"), query, ""))
 
 
+def is_reddit_url(url: str) -> bool:
+    return urlsplit(url).netloc == REDDIT_HOST
+
+
 def is_worth_reading(url: str) -> bool:
     """Skip Reddit pages that aren't discussion threads (subreddit front pages, user profiles)."""
     parts = urlsplit(url)

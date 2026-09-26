@@ -10,11 +10,12 @@ import logging
 from langgraph.runtime import Runtime
 
 from app.agents.research.extraction import extract_evidence
-from app.agents.research.pages import choose_pages, strip_markup, truncate
-from app.agents.research.queries import plan_queries
+from app.agents.research.pages import choose_pages, is_reddit_url, strip_markup, truncate
+from app.agents.research.queries import plan_queries, subreddit_for
 from app.agents.research.schemas import ResearchResult
-from app.agents.research.state import PageTask, ResearchContext, ResearchState
-from app.external.search_client import ExtractedPage, SearchClient, SearchClientError, SearchHit
+from app.agents.research.sources import FETCH_ERRORS, read_with_tavily
+from app.agents.research.state import PageTask, PlannedQuery, ResearchContext, ResearchState
+from app.external.search_client import SearchClientError, SearchHit
 
 logger = logging.getLogger(__name__)
 
@@ -33,24 +34,25 @@ async def plan_searches(state: ResearchState, runtime: Runtime[ResearchContext])
 async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:
     """Run this round's searches in parallel and choose which result pages to read.
 
+    "reddit" searches go to the Reddit source (API or Tavily), "web" searches to Tavily.
     One failed search is logged and skipped.
     """
-    search = runtime.context.search
-    budget = runtime.context.budget
+    context = runtime.context
+    subreddit = subreddit_for(state["request"].university)
     queries = state["planned_queries"]
 
-    outcomes = await asyncio.gather(
-        *(
-            search.search(query.text, max_results=budget.results_per_query, include_domains=query.domains)
-            for query in queries
-        ),
-        return_exceptions=True,
-    )
+    def run(query: PlannedQuery):
+        limit = context.budget.results_per_query
+        if query.where == "reddit":
+            return context.reddit.find_threads(subreddit, query.text, limit)
+        return context.search.search(query.text, max_results=limit)
+
+    outcomes = await asyncio.gather(*(run(query) for query in queries), return_exceptions=True)
 
     hits: list[SearchHit] = []
     failures = 0
     for query, outcome in zip(queries, outcomes, strict=True):
-        if isinstance(outcome, SearchClientError):
+        if isinstance(outcome, FETCH_ERRORS):
             failures += 1
             logger.warning("Search failed, skipping it: %s (%s)", query, outcome)
         elif isinstance(outcome, BaseException):
@@ -61,7 +63,7 @@ async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     if queries and failures == len(queries):
         raise SearchClientError(f"All {failures} searches failed in round {state['round_number']}.")
 
-    to_read = choose_pages(hits, already_seen=state["urls_seen"], limit=budget.max_pages_per_round)
+    to_read = choose_pages(hits, already_seen=state["urls_seen"], limit=context.budget.max_pages_per_round)
     return {
         "queries_run": queries,
         "to_read": to_read,
@@ -75,12 +77,20 @@ async def read_pages(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     if not to_read:
         return {"pages": []}
 
-    logger.info("Reading %d pages...", len(to_read))
-    pages = await _read_in_small_batches(
-        runtime.context.search,
-        [hit.url for hit in to_read],
-        batch_size=runtime.context.budget.pages_per_read,
+    reddit_urls = [hit.url for hit in to_read if is_reddit_url(hit.url)]
+    web_urls = [hit.url for hit in to_read if not is_reddit_url(hit.url)]
+    logger.info(
+        "Reading %d Reddit threads via %s, and %d web pages...",
+        len(reddit_urls),
+        runtime.context.reddit.name,
+        len(web_urls),
     )
+
+    reddit_pages, web_pages = await asyncio.gather(
+        runtime.context.reddit.read_threads(reddit_urls) if reddit_urls else _nothing(),
+        read_with_tavily(runtime.context.search, web_urls) if web_urls else _nothing(),
+    )
+    pages = reddit_pages + web_pages
     if pages:
         logger.info("Read %d of %d pages. Extracting claims, 15-40s...", len(pages), len(to_read))
 
@@ -88,39 +98,8 @@ async def read_pages(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     return {"pages": [truncate(strip_markup(page), max_chars) for page in pages]}
 
 
-async def _read_in_small_batches(search: SearchClient, urls: list[str], batch_size: int) -> list[ExtractedPage]:
-    """Read pages a few at a time, then retry the failures once.
-
-    Stopgap until we have Reddit's official API: Reddit blocks Tavily's fetcher
-    far more often when it asks for many threads at once, and fetches also fail
-    at random. Tavily doesn't bill failed extractions, so the retry is cheap.
-    """
-    pages, failed = await _read_once(search, urls, batch_size)
-    if failed:
-        logger.info("Could not read %d pages, retrying once: %s", len(failed), failed)
-        retried, failed = await _read_once(search, failed, batch_size)
-        pages.extend(retried)
-    if failed:
-        logger.info("Gave up on %d pages: %s", len(failed), failed)
-    return pages
-
-
-async def _read_once(search: SearchClient, urls: list[str], batch_size: int) -> tuple[list[ExtractedPage], list[str]]:
-    """One pass over `urls` in sequential batches. Returns (pages read, URLs that failed)."""
-    pages: list[ExtractedPage] = []
-    failed: list[str] = []
-    for start in range(0, len(urls), batch_size):
-        batch_urls = urls[start : start + batch_size]
-        try:
-            # "advanced": Reddit blocks the basic fetcher entirely.
-            batch = await search.extract(batch_urls, depth="advanced")
-        except SearchClientError as exc:
-            logger.warning("Page extraction failed for %s: %s", batch_urls, exc)
-            failed.extend(batch_urls)
-            continue
-        pages.extend(batch.pages)
-        failed.extend(batch.failed_urls)
-    return pages, failed
+async def _nothing() -> list:
+    return []
 
 
 async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> dict:
