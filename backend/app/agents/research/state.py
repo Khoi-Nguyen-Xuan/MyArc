@@ -14,7 +14,9 @@ import operator
 from dataclasses import dataclass
 from typing import Annotated, TypedDict
 
-from app.agents.research.schemas import EvidenceClaim, ResearchRequest, Source
+from langchain.chat_models import BaseChatModel
+
+from app.agents.research.schemas import EvidenceClaim, ResearchRequest, ResearchResult, Source
 from app.external.search_client import ExtractedPage, SearchClient, SearchHit
 
 
@@ -45,16 +47,18 @@ class ResearchContext:
     """What every node needs but never changes during a run: services and limits.
 
     Passed once through LangGraph's runtime context (`graph.ainvoke(..., context=...)`)
-    instead of being stored in the state, so tests can swap in a fake search client.
+    instead of being stored in the state, so tests can swap in a fake search client or LLM.
     """
 
     search: SearchClient
+    llm: BaseChatModel
     budget: ResearchBudget = ResearchBudget()
 
 
 class ResearchState(TypedDict):
     request: ResearchRequest
     round_number: int
+    keep_searching: bool  # set by review_round after each round
 
     # Current round only (overwritten)
     planned_queries: list[PlannedQuery]
@@ -66,3 +70,14 @@ class ResearchState(TypedDict):
     urls_seen: Annotated[list[str], operator.add]  # never read the same page twice
     sources: Annotated[list[Source], operator.add]
     claims: Annotated[list[EvidenceClaim], operator.add]
+
+    # Set once, by the last node
+    result: ResearchResult
+
+
+class PageTask(TypedDict):
+    """Input of one parallel claim-extraction branch: one page, sent with `Send`."""
+
+    request: ResearchRequest
+    page: ExtractedPage
+    title: str
