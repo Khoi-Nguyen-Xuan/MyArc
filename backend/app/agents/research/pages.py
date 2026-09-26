@@ -36,6 +36,12 @@ def normalize_url(url: str) -> str:
     return urlunsplit(("https", host, parts.path.rstrip("/"), query, ""))
 
 
+def is_on_domains(url: str, domains: Iterable[str]) -> bool:
+    """True if the URL's host is one of `domains` or a subdomain of one ("apps.ualberta.ca" is on "ualberta.ca")."""
+    host = urlsplit(url).netloc.lower().removeprefix("www.")
+    return any(host == domain or host.endswith("." + domain) for domain in domains)
+
+
 def is_reddit_url(url: str) -> bool:
     return urlsplit(url).netloc == REDDIT_HOST
 
@@ -49,7 +55,7 @@ def is_worth_reading(url: str) -> bool:
 
 
 def choose_pages(hits: Iterable[SearchHit], *, already_seen: Iterable[str], limit: int) -> list[SearchHit]:
-    """Pick the best `limit` new pages: normalized, deduplicated, highest Tavily score first."""
+    """Pick the best `limit` new pages: normalized and deduplicated, Reddit threads first, then by score."""
     seen = set(already_seen)
     best_by_url: dict[str, SearchHit] = {}
 
@@ -61,7 +67,7 @@ def choose_pages(hits: Iterable[SearchHit], *, already_seen: Iterable[str], limi
         if current is None or hit.score > current.score:
             best_by_url[url] = dataclasses.replace(hit, url=url)
 
-    ranked = sorted(best_by_url.values(), key=lambda hit: hit.score, reverse=True)
+    ranked = sorted(best_by_url.values(), key=lambda hit: (is_reddit_url(hit.url), hit.score), reverse=True)
     return ranked[:limit]
 
 

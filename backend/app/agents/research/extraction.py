@@ -18,6 +18,7 @@ from langchain.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
+from app.agents.research.queries import UNIVERSITY_DOMAINS
 from app.agents.research.schemas import (
     Aspect,
     EvidenceClaim,
@@ -32,10 +33,6 @@ from app.external.search_client import ExtractedPage
 PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "research_agent.md"
 
 MIN_RELEVANCE = 0.5  # drops claims the LLM itself was unsure belong to this course (0.4 in the prompt's scale)
-
-UNIVERSITY_DOMAINS: dict[str, str] = {
-    "University of Alberta": "ualberta.ca",
-}
 
 
 # What the LLM returns.

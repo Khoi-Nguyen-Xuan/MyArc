@@ -10,9 +10,9 @@ import logging
 from langgraph.runtime import Runtime
 
 from app.agents.research.extraction import extract_evidence
-from app.agents.research.pages import choose_pages, is_reddit_url, strip_markup, truncate
-from app.agents.research.queries import plan_queries, subreddit_for
-from app.agents.research.schemas import ResearchResult
+from app.agents.research.pages import choose_pages, is_on_domains, is_reddit_url, strip_markup, truncate
+from app.agents.research.queries import excluded_web_domains, plan_queries, subreddit_for
+from app.agents.research.schemas import ResearchResult, SourceType
 from app.agents.research.sources import FETCH_ERRORS, read_with_tavily
 from app.agents.research.state import PageTask, PlannedQuery, ResearchContext, ResearchState
 from app.external.search_client import SearchClientError, SearchHit
@@ -39,13 +39,14 @@ async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     """
     context = runtime.context
     subreddit = subreddit_for(state["request"].university)
+    excluded = excluded_web_domains(state["request"].university)
     queries = state["planned_queries"]
 
     def run(query: PlannedQuery):
         limit = context.budget.results_per_query
         if query.where == "reddit":
             return context.reddit.find_threads(subreddit, query.text, limit)
-        return context.search.search(query.text, max_results=limit)
+        return context.search.search(query.text, max_results=limit, exclude_domains=excluded)
 
     outcomes = await asyncio.gather(*(run(query) for query in queries), return_exceptions=True)
 
@@ -63,6 +64,7 @@ async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     if queries and failures == len(queries):
         raise SearchClientError(f"All {failures} searches failed in round {state['round_number']}.")
 
+    hits = [hit for hit in hits if not is_on_domains(hit.url, excluded)]  # in case Tavily's filter lets one through
     to_read = choose_pages(hits, already_seen=state["urls_seen"], limit=context.budget.max_pages_per_round)
     return {
         "queries_run": queries,
@@ -127,23 +129,32 @@ async def review_round(state: ResearchState, runtime: Runtime[ResearchContext]) 
     """Join point after the parallel branches: report progress and decide whether to search again."""
     keep_searching = should_search_again(state, runtime.context)
     logger.info(
-        "Research round %d for %s: %d claims from %d sources so far (%s)",
+        "Research round %d for %s: %d claims from %d Reddit threads and %d other pages so far (%s)",
         state["round_number"],
         state["request"].course_code,
         len(state["claims"]),
-        len(state["sources"]),
+        _reddit_threads(state),
+        len(state["sources"]) - _reddit_threads(state),
         "searching again" if keep_searching else "done",
     )
     return {"keep_searching": keep_searching}
 
 
 def should_search_again(state: ResearchState, context: ResearchContext) -> bool:
-    """Stop when we have enough claims, ran out of rounds, or finished a Critic revision pass."""
-    if len(state["claims"]) >= context.budget.enough_claims:
+    """Stop when enough Reddit threads gave claims, we ran out of rounds, or finished a Critic revision pass.
+
+    Counts threads, not claims: one long thread can yield 15 claims from two people,
+    while five threads are five separate conversations.
+    """
+    if _reddit_threads(state) >= context.budget.enough_threads:
         return False
     if state["round_number"] >= context.budget.max_rounds:
         return False
     return not state["request"].follow_up_queries
+
+
+def _reddit_threads(state: ResearchState) -> int:
+    return sum(source.source_type is SourceType.REDDIT for source in state["sources"])
 
 
 async def assemble_result(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:

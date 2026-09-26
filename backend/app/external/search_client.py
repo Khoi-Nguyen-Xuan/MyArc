@@ -78,14 +78,16 @@ class SearchClient:
         max_results: int = 5,
         depth: SearchDepth = "basic",
         include_domains: Sequence[str] | None = None,
+        exclude_domains: Sequence[str] | None = None,
     ) -> list[SearchHit]:
-        """Run one web search. `include_domains` to restricts results"""
+        """Run one web search. `include_domains` restricts results to sites, `exclude_domains` drops sites."""
         try:
             response = await self._tavily.search(
                 query,
                 search_depth=depth,
                 max_results=max_results,
                 include_domains=list(include_domains) if include_domains else None,
+                exclude_domains=list(exclude_domains) if exclude_domains else None,
                 timeout=self._timeout_seconds,
             )
         except _TAVILY_FAILURES as exc:
