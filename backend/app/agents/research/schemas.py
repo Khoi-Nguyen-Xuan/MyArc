@@ -10,18 +10,16 @@ Job: The researcher main task is to find what students say about a course on the
 
 from __future__ import annotations
 
-import re
 from datetime import date
 from enum import StrEnum
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
+from app.core.course_codes import normalize_course_code
+
 #We going to trim if the comment/review is longer than this 
 MAX_QUOTE_LENGTH = 300
-
-#Extract course code with regex 
-_COURSE_CODE = re.compile(r"^([A-Z]+)\s*(\d{3}[A-Z]?)$")
 
 
 class SourceType(StrEnum):
@@ -80,11 +78,8 @@ class ResearchRequest(BaseModel):
 
     @field_validator("course_code")
     @classmethod
-    def normalize_course_code(cls, value: str) -> str:
-        """Turn "cmput301" or "CMPUT  301" into "CMPUT 301" so searches and cache keys agree."""
-        compact = " ".join(value.upper().split())
-        match = _COURSE_CODE.match(compact)
-        return f"{match[1]} {match[2]}" if match else compact
+    def normalize_code(cls, value: str) -> str:
+        return normalize_course_code(value)
 
 
 class Source(BaseModel):
