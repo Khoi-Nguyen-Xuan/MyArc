@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Annotated, TypedDict
 
 from app.agents.research.schemas import EvidenceClaim, ResearchRequest, Source
-from app.external.search_client import ExtractedPage, SearchHit
+from app.external.search_client import ExtractedPage, SearchClient, SearchHit
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,9 +40,20 @@ class ResearchBudget:
     enough_claims: int = 10  # stop searching early once agent have this many claims
 
 
+@dataclass(frozen=True, slots=True)
+class ResearchContext:
+    """What every node needs but never changes during a run: services and limits.
+
+    Passed once through LangGraph's runtime context (`graph.ainvoke(..., context=...)`)
+    instead of being stored in the state, so tests can swap in a fake search client.
+    """
+
+    search: SearchClient
+    budget: ResearchBudget = ResearchBudget()
+
+
 class ResearchState(TypedDict):
     request: ResearchRequest
-    budget: ResearchBudget
     round_number: int
 
     # Current round only (overwritten)

@@ -3,3 +3,4 @@
 # httpx, openai/anthropic sdk, pypdf, python-multipart
 
 tavily-python>=0.8,<1
+langgraph>=1.2,<2
