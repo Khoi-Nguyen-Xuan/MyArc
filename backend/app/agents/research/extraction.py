@@ -31,7 +31,7 @@ from app.external.search_client import ExtractedPage
 
 PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "research_agent.md"
 
-MIN_RELEVANCE = 0.3  # claims below this are unrelated
+MIN_RELEVANCE = 0.5  # drops claims the LLM itself was unsure belong to this course (0.4 in the prompt's scale)
 
 UNIVERSITY_DOMAINS: dict[str, str] = {
     "University of Alberta": "ualberta.ca",
