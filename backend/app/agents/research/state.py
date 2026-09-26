@@ -39,6 +39,7 @@ class ResearchBudget:
     results_per_query: int = 5
     max_pages_per_round: int = 8
     max_chars_per_page: int = 12_000  # long Reddit threads get cut
+    pages_per_read: int = 2  # Reddit blocks more often when many threads are fetched at once
     enough_claims: int = 10  # stop searching early once agent have this many claims
 
 

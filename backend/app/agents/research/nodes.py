@@ -14,7 +14,7 @@ from app.agents.research.pages import choose_pages, strip_markup, truncate
 from app.agents.research.queries import plan_queries
 from app.agents.research.schemas import ResearchResult
 from app.agents.research.state import PageTask, ResearchContext, ResearchState
-from app.external.search_client import SearchClientError, SearchHit
+from app.external.search_client import ExtractedPage, SearchClient, SearchClientError, SearchHit
 
 logger = logging.getLogger(__name__)
 
@@ -75,18 +75,52 @@ async def read_pages(state: ResearchState, runtime: Runtime[ResearchContext]) ->
     if not to_read:
         return {"pages": []}
 
-    try:
-        # "advanced": Reddit blocks the basic fetcher, and most of our pages are Reddit threads.
-        batch = await runtime.context.search.extract([hit.url for hit in to_read], depth="advanced")
-    except SearchClientError as exc:
-        logger.warning("Page extraction failed for round %s: %s", state["round_number"], exc)
-        return {"pages": []}
-
-    if batch.failed_urls:
-        logger.info("Could not read %d pages: %s", len(batch.failed_urls), batch.failed_urls)
+    logger.info("Reading %d pages...", len(to_read))
+    pages = await _read_in_small_batches(
+        runtime.context.search,
+        [hit.url for hit in to_read],
+        batch_size=runtime.context.budget.pages_per_read,
+    )
+    if pages:
+        logger.info("Read %d of %d pages. Extracting claims, 15-40s...", len(pages), len(to_read))
 
     max_chars = runtime.context.budget.max_chars_per_page
-    return {"pages": [truncate(strip_markup(page), max_chars) for page in batch.pages]}
+    return {"pages": [truncate(strip_markup(page), max_chars) for page in pages]}
+
+
+async def _read_in_small_batches(search: SearchClient, urls: list[str], batch_size: int) -> list[ExtractedPage]:
+    """Read pages a few at a time, then retry the failures once.
+
+    Stopgap until we have Reddit's official API: Reddit blocks Tavily's fetcher
+    far more often when it asks for many threads at once, and fetches also fail
+    at random. Tavily doesn't bill failed extractions, so the retry is cheap.
+    """
+    pages, failed = await _read_once(search, urls, batch_size)
+    if failed:
+        logger.info("Could not read %d pages, retrying once: %s", len(failed), failed)
+        retried, failed = await _read_once(search, failed, batch_size)
+        pages.extend(retried)
+    if failed:
+        logger.info("Gave up on %d pages: %s", len(failed), failed)
+    return pages
+
+
+async def _read_once(search: SearchClient, urls: list[str], batch_size: int) -> tuple[list[ExtractedPage], list[str]]:
+    """One pass over `urls` in sequential batches. Returns (pages read, URLs that failed)."""
+    pages: list[ExtractedPage] = []
+    failed: list[str] = []
+    for start in range(0, len(urls), batch_size):
+        batch_urls = urls[start : start + batch_size]
+        try:
+            # "advanced": Reddit blocks the basic fetcher entirely.
+            batch = await search.extract(batch_urls, depth="advanced")
+        except SearchClientError as exc:
+            logger.warning("Page extraction failed for %s: %s", batch_urls, exc)
+            failed.extend(batch_urls)
+            continue
+        pages.extend(batch.pages)
+        failed.extend(batch.failed_urls)
+    return pages, failed
 
 
 async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> dict:
@@ -106,6 +140,7 @@ async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> d
     if source is None:
         logger.info("Page not about the course, skipping: %s", page.url)
         return {"sources": [], "claims": []}
+    logger.info("%d claims from %s", len(claims), page.url)
     return {"sources": [source], "claims": claims}
 
 
