@@ -1,0 +1,16 @@
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+Start Postgres (Docker Desktop must already be open and running)
+docker compose up -d
+docker ps
+
+Run migrations — creates all tables fresh on the new machine
+alembic upgrade head
+
+Start the API
+uvicorn app.main:app --reload
+
+Check list API on 
+baseurl/docs
