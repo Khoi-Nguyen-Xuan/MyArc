@@ -16,8 +16,7 @@ class Course(Base):
     professor_name = Column(String)
     course_code = Column(String)
 
-    # [{id, type: assessment|midterm|quiz, score_percent (sums to 1 across
-    #   the array — validated at the API layer, not the DB), date: "YYYY-MM-DD"}]
+    # [{id, type: assessment|midterm|quiz, score_percent, date: "YYYY-MM-DD"}]
     assessments = Column(JSONB)
     # [{id, link, content_summary}]
     evidence = Column(JSONB)

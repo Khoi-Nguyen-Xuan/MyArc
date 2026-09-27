@@ -1,6 +1,6 @@
 """The criteria scored in code, and the evaluation's confidence.
 
-These three criteria can be counted from the data, so no LLM is involved: the
+These three criteria can be counted from the data, so I decide that no LLM is needed: the
 numbers are exact, the same on every run, and easy to explain in the "Why?"
 drawer. Each function returns a `CriterionScore` with its reasoning and evidence.
 
@@ -15,13 +15,12 @@ from app.agents.evaluator.schemas import Criterion, CriterionScore, EvidenceItem
 from app.agents.research.schemas import EvidenceClaim, ResearchResult, Signal, SourceType
 from app.agents.syllabus.schemas import Assessment, AssessmentKind, SyllabusResult
 
-# Deadline pressure: 26 graded items (two a week over a 13-week term) scores 100.
-ITEMS_FOR_FULL_PRESSURE = 26
+# Maximimum 13 graded items (one a week over a 13-week term) scores 100.
+ITEMS_FOR_FULL_PRESSURE = 13
 
 EXAM_KINDS = {AssessmentKind.MIDTERM, AssessmentKind.FINAL_EXAM}
 
-# Student review difficulty: with fewer opinions than this (weighted by relevance),
-# the score is pulled toward 50, the "no idea" middle, so two posts can't decide it.
+# Student review difficulty
 OPINIONS_FOR_FULL_TRUST = 8
 MAX_STUDENT_EVIDENCE = 6
 
@@ -44,9 +43,7 @@ def deadline_pressure(syllabus: SyllabusResult) -> CriterionScore:
 
 def assessment_weighting(syllabus: SyllabusResult) -> CriterionScore:
     """The share of the grade from midterms and finals.
-
-    Divided by the syllabus's own total, so a course worth 104% (extra credit) is
-    measured against 104, not 100.
+    Divided by the syllabus's own total
     """
     exams = [assessment for assessment in syllabus.assessments if assessment.kind in EXAM_KINDS]
     exam_weight = sum(assessment.total_weight for assessment in exams)
@@ -61,7 +58,7 @@ def assessment_weighting(syllabus: SyllabusResult) -> CriterionScore:
 
 
 def student_review_difficulty(research: ResearchResult) -> CriterionScore:
-    """The relevance-weighted share of "harder" among "harder" and "easier" claims.
+    """The relevance-weighted share of "harder"/ total "harder" and "easier" claims.
 
     Neutral claims don't count. With few opinions the score is pulled toward 50.
     """
@@ -81,9 +78,10 @@ def student_review_difficulty(research: ResearchResult) -> CriterionScore:
             f"{sum(c.signal is Signal.EASIER for c in opinions)} say it is manageable."
         )
         if trust < 1:
-            reasoning += " Few opinions, so the score is pulled toward the middle."
+            reasoning += " Few opinions, so the score is partially weighted by trust"
 
     strongest = sorted(opinions, key=lambda claim: claim.relevance, reverse=True)[:MAX_STUDENT_EVIDENCE]
+    
     return CriterionScore(
         criterion=Criterion.STUDENT_REVIEW_DIFFICULTY,
         score=round(score, 1),

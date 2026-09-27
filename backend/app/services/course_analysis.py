@@ -1,8 +1,6 @@
 """Runs the agents on one uploaded syllabus:
 
     file -> syllabus agent -> research agent -> evaluator -> CourseAnalysis
-
-Nothing here touches the database; course_service saves the result.
 """
 
 from __future__ import annotations
@@ -31,11 +29,11 @@ LLM_TIMEOUT_SECONDS = 180  # a long syllabus takes the LLM a while to read
 
 
 class AnalysisError(Exception):
-    """The syllabus can't be analyzed. The message is written to be shown to the student."""
+    """The syllabus can't be analyzed. The message is written to be shown to the users."""
 
 
 class SetupError(Exception):
-    """The server is missing an API key. Not the student's fault."""
+    """The server is missing an API key"""
 
 
 @dataclass(frozen=True, slots=True)

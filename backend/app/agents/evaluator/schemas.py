@@ -6,8 +6,8 @@ scores the dashboard shows:
 
 - six criteria, each scored 0-100 (100 = most demanding), with the reasoning
   and evidence behind it for the "Why?" drawer;
-- the weighted `point` and its S-D `ranking`, both COMPUTED here from the six
-  scores with the project's formula, never written by the LLM;
+- the weighted `point` and its S-D `ranking`, both COMPUTED from the six
+  scores with the project's formula;
 - confidence, weekly hours, a one-line review and a short summary.
 
 Three criteria can be counted from the syllabus and student claims, so code
@@ -25,7 +25,7 @@ from pydantic import BaseModel, Field, HttpUrl, computed_field, model_validator
 
 class Criterion(StrEnum):
     WORKLOAD = "workload"  # hours of work overall
-    CONCEPTUAL_DIFFICULTY = "conceptual_difficulty"  # how hard the ideas are
+    CONCEPTUAL_DIFFICULTY = "conceptual_difficulty"  # how hard the concepts are
     DEADLINE_PRESSURE = "deadline_pressure"  # how many graded items, how often
     ASSESSMENT_WEIGHTING = "assessment_weighting"  # how much of the grade rides on exams
     CONTINUOUS_STUDY = "continuous_study"  # must you keep up weekly, or can you cram?
@@ -45,19 +45,19 @@ class Rank(StrEnum):
     D = "D"  # least demanding
 
 
-# The project's formula. The weights add up to 1, so `point` stays on the 0-100 scale.
+# The project's formula
 CRITERION_WEIGHTS: dict[Criterion, float] = {
     Criterion.WORKLOAD: 0.25,
     Criterion.CONCEPTUAL_DIFFICULTY: 0.20,
     Criterion.DEADLINE_PRESSURE: 0.20,
-    Criterion.ASSESSMENT_WEIGHTING: 0.15,
+    Criterion.ASSESSMENT_WEIGHTING: 0.10,
     Criterion.CONTINUOUS_STUDY: 0.10,
-    Criterion.STUDENT_REVIEW_DIFFICULTY: 0.10,
+    Criterion.STUDENT_REVIEW_DIFFICULTY: 0.15, 
 }
 
-# Fixed cut-offs on `point`, highest first: a point of at least 80 is S, and so on.
+# Fixed cut-offs on `point`
 RANK_CUTOFFS: list[tuple[Rank, float]] = [
-    (Rank.S, 80),
+    (Rank.S, 70),
     (Rank.A, 65),
     (Rank.B, 50),
     (Rank.C, 35),
@@ -96,7 +96,7 @@ class WeeklyHours(BaseModel):
 
 
 class CourseEvaluation(BaseModel):
-    """Everything the dashboard shows for one course."""
+    """Everything the dashboard shows for one course"""
 
     course_code: str
     criteria: list[CriterionScore] = Field(description="Exactly one score per criterion.")

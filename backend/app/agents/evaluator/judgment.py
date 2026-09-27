@@ -1,9 +1,8 @@
-"""The evaluator's LLM part: scores the three criteria that need judgment.
+"""The evaluator's LLM: scores the three criteria that need judgment.
 
 The LLM reads the syllabus facts and student claims as numbered lines ([S3],
 [R7]) and cites them by id. Our code turns the ids back into evidence, so every
-piece of evidence in the result is a real syllabus fact or student claim, never
-text the LLM wrote.
+piece of evidence in the result is a real syllabus fact or student claim
 """
 
 from __future__ import annotations
@@ -26,13 +25,12 @@ PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "evaluator.md"
 MAX_STUDENT_CLAIMS = 40  # the most relevant ones; keeps the prompt small and focused
 
 
-# What the LLM returns. No defaults, as OpenAI's strict structured output requires;
+# What the LLM returns
 # scores and hours are clamped to their ranges in code.
 class JudgedCriterion(BaseModel):
     score: float
     reasoning: str
     evidence_ids: list[str]
-
 
 class Judgment(BaseModel):
     workload: JudgedCriterion
