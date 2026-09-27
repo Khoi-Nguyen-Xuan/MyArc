@@ -5,14 +5,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class AssessmentItem(BaseModel):
     type: str
-    score_percent: float
-    date: date_type
+    score_percent: float  # 0.05 = 5% of the grade; the sum can pass 1 when there is extra credit
+    date: date_type | None = None  # None when the syllabus gives no date
 
 
 class EvidenceItem(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    link: str
+    link: str | None = None  # None for facts from the syllabus itself
     content_summary: str = Field(alias="content-summary")
 
 

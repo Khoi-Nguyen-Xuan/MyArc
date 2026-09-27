@@ -1,49 +1,105 @@
 from sqlalchemy.orm import Session
 
+from app.agents.evaluator.schemas import Criterion, CourseEvaluation
+from app.agents.syllabus.schemas import SyllabusResult
 from app.models.course import Course
 from app.schemas.course import CourseResponse
-from app.utils.pdf_parser import extract_text_from_pdf
+from app.services.course_analysis import CourseAnalysis, analyze_syllabus
+
+CRITERION_LABELS = {
+    Criterion.WORKLOAD: "Workload",
+    Criterion.CONCEPTUAL_DIFFICULTY: "Conceptual difficulty",
+    Criterion.DEADLINE_PRESSURE: "Deadline pressure",
+    Criterion.ASSESSMENT_WEIGHTING: "Assessment weighting",
+    Criterion.CONTINUOUS_STUDY: "Continuous-study requirement",
+    Criterion.STUDENT_REVIEW_DIFFICULTY: "Student-review difficulty",
+}
 
 
-def _run_placeholder_analysis(syllabus_text: str) -> dict:
-    """STUB — replace with the real multi-agent pipeline
-    (app/agents/orchestrator.py: parser -> research -> evaluator -> critic).
-
-    Returns zeroed/empty analysis so the upload -> save -> retrieve flow is
-    fully testable before the LLM pipeline (which needs an API key) exists.
-    """
-    preview = syllabus_text.strip().replace("\n", " ")[:300]
-    return {
-        "course_semester": None,
-        "course_name": None,
-        "professor_name": None,
-        "course_code": None,
-        "assessments": [],
-        "short_review": None,
-        "workload": 0.0,
-        "conceptual_difficulty": 0.0,
-        "assessment_weighting": 0.0,
-        "continious_study_requirement": 0.0,
-        "student_review": 0.0,
-        "evidence": [],
-        "summary": f"[placeholder] PDF text extracted ({len(syllabus_text)} chars). "
-        f"Preview: {preview}...",
-        "reasoning": "[placeholder] Real analysis pipeline not wired up yet.",
-        "ranking": None,
-        "point": 0.0,
-        "confidence": 0.0,
-    }
-
-
-def create_course_from_syllabus(db: Session, user_id: int, pdf_bytes: bytes) -> Course:
-    text = extract_text_from_pdf(pdf_bytes)
-    analysis = _run_placeholder_analysis(text)
-
-    course = Course(user_id=user_id, **analysis)
+async def create_course_from_syllabus(
+    db: Session,
+    user_id: int,
+    file_bytes: bytes,
+    file_name: str,
+    *,
+    course_code: str | None = None,
+    term: str | None = None,
+) -> Course:
+    """Run the agents on the syllabus, then save the result as a course."""
+    analysis = await analyze_syllabus(file_bytes, file_name, course_code=course_code, term=term)
+    course = Course(user_id=user_id, **_to_columns(analysis))
     db.add(course)
     db.commit()
     db.refresh(course)
     return course
+
+
+def _to_columns(analysis: CourseAnalysis) -> dict:
+    """Agent results -> course columns. Scores, point and confidence are stored out of 10."""
+    syllabus, evaluation = analysis.syllabus, analysis.evaluation
+    return {
+        "course_semester": syllabus.term or syllabus.request.term,
+        "course_name": syllabus.course_title,
+        "professor_name": ", ".join(syllabus.instructors) or None,
+        "course_code": evaluation.course_code,
+        "assessments": _assessments(syllabus),
+        "evidence": _evidence(evaluation),
+        "short_review": evaluation.short_review,
+        "workload": _out_of_10(evaluation.score(Criterion.WORKLOAD)),
+        "conceptual_difficulty": _out_of_10(evaluation.score(Criterion.CONCEPTUAL_DIFFICULTY)),
+        "assessment_weighting": _out_of_10(evaluation.score(Criterion.ASSESSMENT_WEIGHTING)),
+        "continious_study_requirement": _out_of_10(evaluation.score(Criterion.CONTINUOUS_STUDY)),
+        "student_review": _out_of_10(evaluation.score(Criterion.STUDENT_REVIEW_DIFFICULTY)),
+        "summary": evaluation.summary,
+        "reasoning": _reasoning(evaluation),
+        "ranking": evaluation.ranking.value,
+        "point": _out_of_10(evaluation.point),
+        "confidence": round(evaluation.confidence * 10, 1),
+    }
+
+
+def _assessments(syllabus: SyllabusResult) -> list[dict]:
+    """One row per graded item: "4 labs x 5%" becomes four rows of 0.05, each with its own date if known.
+    score_percent can add up to more than 1 when the course offers extra credit."""
+    rows = []
+    for assessment in syllabus.assessments:
+        for index in range(assessment.count):
+            due = assessment.due_dates[index] if index < len(assessment.due_dates) else None
+            rows.append({
+                "id": len(rows) + 1,
+                "type": assessment.kind.value,
+                "score_percent": round(assessment.weight_each / 100, 4),
+                "date": due.isoformat() if due else None,
+            })
+    return rows
+
+
+def _evidence(evaluation: CourseEvaluation) -> list[dict]:
+    """Evidence behind all criteria, each fact once."""
+    rows, seen = [], set()
+    for score in evaluation.criteria:
+        for item in score.evidence:
+            link = str(item.link) if item.link else None
+            if (link, item.text) in seen:
+                continue
+            seen.add((link, item.text))
+            rows.append({"id": len(rows) + 1, "link": link, "content_summary": item.text})
+    return rows
+
+
+def _reasoning(evaluation: CourseEvaluation) -> str:
+    lines = [
+        f"{CRITERION_LABELS[score.criterion]} ({_out_of_10(score.score):g}/10): {score.reasoning}"
+        for score in evaluation.criteria
+    ]
+    lines.append(f"Weekly study time: {evaluation.weekly_hours.min}-{evaluation.weekly_hours.max} hours outside class.")
+    if evaluation.warnings:
+        lines += ["", "Notes:", *(f"- {warning}" for warning in evaluation.warnings)]
+    return "\n".join(lines)
+
+
+def _out_of_10(score: float) -> float:
+    return round(score / 10, 1)
 
 
 def list_courses(db: Session, user_id: int) -> list[Course]:

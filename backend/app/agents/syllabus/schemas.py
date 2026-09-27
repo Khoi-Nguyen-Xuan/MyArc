@@ -55,15 +55,17 @@ class SyllabusRequest(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    course_code: str = Field(
+    course_code: str | None = Field(
+        default=None,
         description='The code the student added the syllabus under, e.g. "BIOIN 301". '
+        "None: the agent reads it from the syllabus.",
     )
     term: str | None = Field(default=None, description='The study term, e.g. "Fall 2026".')
 
     @field_validator("course_code")
     @classmethod
-    def normalize_code(cls, value: str) -> str:
-        return normalize_course_code(value)
+    def normalize_code(cls, value: str | None) -> str | None:
+        return normalize_course_code(value) if value else None
 
 
 class SourceRef(BaseModel):

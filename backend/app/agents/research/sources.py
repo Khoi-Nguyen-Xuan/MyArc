@@ -41,6 +41,10 @@ class RedditSource(Protocol):
         """Read threads in full. Threads that can't be read are logged and left out."""
         ...
 
+    async def aclose(self) -> None:
+        """Release network connections once the run is over."""
+        ...
+
 
 class RedditApiSource:
     name = "Reddit API"
@@ -78,6 +82,9 @@ class RedditApiSource:
         pages = await asyncio.gather(*(read(url) for url in urls))
         return [page for page in pages if page is not None]
 
+    async def aclose(self) -> None:
+        await self._client.aclose()
+
 
 class TavilyRedditSource:
     name = "Tavily (fallback until the Reddit API is approved)"
@@ -91,6 +98,9 @@ class TavilyRedditSource:
 
     async def read_threads(self, urls: list[str]) -> list[ExtractedPage]:
         return await read_with_tavily(self._search, urls)
+
+    async def aclose(self) -> None:
+        pass  # the Tavily client holds no open connections
 
 
 def build_reddit_source(

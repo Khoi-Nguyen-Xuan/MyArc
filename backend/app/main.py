@@ -1,7 +1,14 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
+
+# Show the agents' progress ("Reading syllabus...", "Researching...") in the uvicorn console
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(name)s  %(message)s", datefmt="%H:%M:%S")
+for noisy in ("httpx", "openai"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 
 app = FastAPI(title="MyArc API")
 

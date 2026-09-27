@@ -16,13 +16,19 @@ DEFAULT_MODEL = "openai:gpt-5-mini"
 _SETUP_ERROR_STATUSES = {401, 403, 404}
 
 
-def create_chat_model(model: str = DEFAULT_MODEL, *, timeout_seconds: float = 60.0) -> BaseChatModel:
+def create_chat_model(
+    model: str = DEFAULT_MODEL,
+    *,
+    api_key: str | None = None,
+    timeout_seconds: float = 60.0,
+) -> BaseChatModel:
     """Build a chat model from a "provider:model" string.
 
     No `temperature` on purpose: GPT-5 models only accept the default, and the
     agents rely on structured output, not sampling settings, for consistency.
     """
-    return init_chat_model(model, timeout=timeout_seconds, max_retries=2)
+    # api_key=None lets the provider read its usual environment variable (OPENAI_API_KEY, ...).
+    return init_chat_model(model, api_key=api_key, timeout=timeout_seconds, max_retries=2)
 
 
 def is_setup_error(exc: Exception) -> bool:

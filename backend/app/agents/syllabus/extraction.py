@@ -29,6 +29,7 @@ from app.agents.syllabus.schemas import (
     SyllabusRequest,
     SyllabusResult,
 )
+from app.core.course_codes import normalize_course_code
 from app.utils.documents import Document
 
 PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "syllabus_agent.md"
@@ -57,6 +58,7 @@ class ExtractedPolicy(BaseModel):
 
 
 class SyllabusExtraction(BaseModel):
+    course_code: str | None
     course_title: str | None
     term: str | None
     instructors: list[str]
@@ -87,7 +89,7 @@ async def ask_for_extraction(
 def build_messages(request: SyllabusRequest, document: Document) -> list[BaseMessage]:
     header = "\n".join(
         [
-            f"Course code: {request.course_code}",
+            f"Course code: {request.course_code or 'not given, use the code the syllabus names'}",
             f"Student's term: {request.term or 'not given'}",
             f"File: {document.file_name}",
         ]
@@ -148,6 +150,12 @@ def to_result(
         for item in extraction.policies
         if item.summary.strip()
     ]
+
+    course_code = request.course_code or _clean(extraction.course_code)
+    if course_code is None:
+        problems.append("No course code was found in the syllabus.")
+    else:
+        request = request.model_copy(update={"course_code": normalize_course_code(course_code)})
 
     result = SyllabusResult(
         request=request,

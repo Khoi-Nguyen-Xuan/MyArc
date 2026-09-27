@@ -8,6 +8,7 @@ Some syllabi cover several course codes (cross-listed, e.g. "BIOIN 301" and "BIO
 
 ## Course details
 
+- `course_code`: the course code, e.g. "CMPUT 201". Use the code in the user message when one is given. Otherwise take it from the syllabus; for a cross-listed syllabus, use the first code it lists.
 - `course_title`: the course's name as the syllabus writes it, without the code. Null if it isn't stated.
 - `term`: the term as the syllabus writes it, e.g. "Fall 2026". Null if it isn't stated.
 - `instructors`: the names of the course's instructors or professors, without titles such as "Dr." or "Prof.". Leave out teaching assistants.
