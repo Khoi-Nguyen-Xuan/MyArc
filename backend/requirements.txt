@@ -1,8 +1,12 @@
-# fastapi, uvicorn, sqlalchemy, alembic, psycopg[binary], pgvector,
-# pydantic, pydantic-settings, celery, redis, python-jose, passlib,
-# httpx, openai/anthropic sdk, pypdf, python-multipart
-
-tavily-python>=0.8,<1
-langgraph>=1.2,<2
-langchain>=1.4,<2
-langchain-openai>=1.6,<2
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+alembic==1.13.2
+psycopg[binary]==3.2.1
+pydantic==2.9.2
+pydantic-settings==2.5.2
+email-validator==2.2.0
+pyjwt==2.9.0
+python-dotenv==1.0.1
+python-multipart==0.0.9
+pypdf==4.3.1

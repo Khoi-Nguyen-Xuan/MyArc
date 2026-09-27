@@ -1,0 +1,23 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: myarc_postgres
+    restart: unless-stopped
+    environment:
+      # hardcoded (not read from .env) to rule out a Windows CRLF line-ending
+      # corrupting the value during Compose's ${VAR} substitution
+      POSTGRES_USER: myarc
+      POSTGRES_PASSWORD: "123456"
+      POSTGRES_DB: myarc
+    ports:
+      - "5433:5432"
+    volumes:
+      - myarc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myarc -d myarc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  myarc_pgdata:

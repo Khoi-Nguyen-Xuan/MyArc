@@ -1,26 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import Base, engine
-from app.routers import semesters, courses, uploads
+from app.api.v1.router import api_router
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="MyArc API")
 
-app = FastAPI(title="AI Study Tutor API", version="0.1.0")
-
+# allows the Vite dev server (localhost:5173) to call this API from the
+# browser; add your deployed frontend's origin here too once you have one
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(semesters.router)
-app.include_router(courses.router)
-app.include_router(uploads.router)
+app.include_router(api_router)
 
 
-@app.get("/api/health")
+@app.get("/health")
 def health():
     return {"status": "ok"}
