@@ -1,7 +1,7 @@
 """Contracts for the Syllabus agent: what goes in and what comes out.
 
-The syllabus agent reads one uploaded syllabus (PDF or Word) and returns the
-facts that decide how demanding a course is: what is graded, how much each worth, and when it is due. 
+The syllabus agent reads one uploaded syllabus (PDF or Word) and returns how demanding a course is: 
+what is graded, how much each worth, and when it is due. 
 
 Downstream:
 - the calendar and weekly-workload view use each assessment's due dates;
@@ -9,6 +9,9 @@ Downstream:
   deadline density and so on;
 - the "Why?" drawer shows `source.quote` so a student can see where a fact
   came from.
+
+Weights above 100% are normal: some courses offer extra marks on purpose
+(CMPUT 201 adds up to 104%). Only totals below 100% get a warning.
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ from app.core.course_codes import normalize_course_code
 
 
 class AssessmentKind(StrEnum):
-    """What kind of graded work an assessment is. Drives calendar icons and the Evaluator's scoring."""
+    """What kind of graded work an assessment is."""
 
     ASSIGNMENT = "assignment"
     LAB = "lab"
@@ -48,7 +51,7 @@ class PolicyTopic(StrEnum):
 
 
 class SyllabusRequest(BaseModel):
-    """What the agent knows before reading the file: the student already told which course it is for."""
+    """What the agent knows before reading the file"""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -71,7 +74,7 @@ class SourceRef(BaseModel):
 
 
 class Assessment(BaseModel):
-    """One graded component, e.g. "Quizzes: 9 x 2%" or "Midterm exam: 33%, Oct 15"."""
+    """One graded component"""
 
     name: str = Field(description='As the syllabus names it, e.g. "Quizzes" or "Midterm #1".')
     kind: AssessmentKind
@@ -95,7 +98,7 @@ class Assessment(BaseModel):
     @model_validator(mode="after")
     def dates_fit_count(self) -> Self:
         if len(self.due_dates) > self.count:
-            raise ValueError(f"{self.name}: {len(self.due_dates)} due dates for only {self.count} item(s).")
+            raise ValueError(f"{len(self.due_dates)} due dates for only {self.count} item(s)")
         self.due_dates.sort()
         return self
 
@@ -119,9 +122,14 @@ class SyllabusResult(BaseModel):
     policies: list[Policy] = Field(default_factory=list)
     warnings: list[str] = Field(
         default_factory=list,
-        description='Problems found, e.g. "Weights add up to 95%, not 100%." Shown to the student.',
+        description='Problems found, e.g. "Weights add up to 95%; an assessment may be missing." Shown to the student.',
     )
 
     @property
     def total_weight(self) -> float:
         return sum(assessment.total_weight for assessment in self.assessments)
+
+    @property
+    def extra_credit(self) -> float:
+        """Percent available beyond 100, e.g. 4 when the weights add up to 104%. Intended by the course."""
+        return max(self.total_weight - 100, 0.0)
