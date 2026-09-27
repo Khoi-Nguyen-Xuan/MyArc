@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TopBar, { Logo, StepDots } from '../components/TopBar'
+import TopBar from '../components/TopBar'
 import PanelDark from '../components/PanelDark'
 import ParchmentCard from '../components/ParchmentCard'
 import WoodButton from '../components/WoodButton'
@@ -23,15 +23,7 @@ export default function CreateSemester() {
 
   return (
     <div className="bg-ambient">
-      <TopBar
-        left={<Logo />}
-        right={
-          <>
-            <span className="mono chapter-label">Chapter I — Semester</span>
-            <StepDots total={3} active={1} />
-          </>
-        }
-      />
+      <TopBar />
 
       <div className="create-center">
         <div className="create-card-wrap">

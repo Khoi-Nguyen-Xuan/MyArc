@@ -1,0 +1,74 @@
+.dash-panel-ranks {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ranks-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.ranks-header,
+.ranks-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 76px 84px 100px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.ranks-header {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7A7266;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.ranks-row {
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+  color: #7A7266;
+}
+
+.tier-badge {
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.ranks-course {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ranks-code {
+  font-size: 11px;
+  color: #1B170E;
+}
+
+.ranks-title {
+  font-size: 11px;
+  color: #7A7266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parchment-content {
+  position: relative;
+  z-index: 1;
+}

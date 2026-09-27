@@ -6,31 +6,44 @@ import PanelDark from '../components/PanelDark'
 import ParchmentCard from '../components/ParchmentCard'
 import WoodButton from '../components/WoodButton'
 import LabeledInput from '../components/LabeledInput'
-import Checkbox from '../components/Checkbox'
-import GoldRule from '../components/GoldRule'
-import { login, setToken } from '../lib/api'
+import { signup } from '../lib/api'
 import './Login.css'
 
-export default function Login() {
+export default function Signup() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('jane.doe@ualberta.ca')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [keepSignedIn, setKeepSignedIn] = useState(true)
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
     setSubmitting(true)
     try {
-      const res = await login(email, password)
-      if (!res.success || !res.accessToken) {
-        setError(res.message || 'Login failed.')
+      const signupRes = await signup(email, password)
+      if (!signupRes.success) {
+        setError(signupRes.message || 'Could not create account.')
         return
       }
-      setToken(res.accessToken)
-      navigate('/create-semester')
+
+      // sign the new account straight in, rather than bouncing back to /login
+      // const loginRes = await login(email, password)
+      // if (!loginRes.success || !loginRes.accessToken) {
+      //   // account exists but auto-login failed for some reason; fall back
+      //   // to sending them to the login page instead
+      //   return
+      // }
+      navigate('/login')
+      // setToken(loginRes.accessToken)
+      // navigate('/create-semester')
     } catch {
       setError('Could not reach the server. Is the backend running?')
     } finally {
@@ -44,13 +57,13 @@ export default function Login() {
 
       <div className="login-center">
         <div className="login-card-wrap">
-          <WoodButton tag className="login-tag">Welcome Back</WoodButton>
+          <WoodButton tag className="login-tag">New Adventurer</WoodButton>
 
           <PanelDark className="login-panel">
             <ParchmentCard>
-              <h1 className="login-title">Enter the Realm</h1>
+              <h1 className="login-title">Begin Your Journey</h1>
               <p className="login-subtitle">
-                Sign in to return to your semester, your trials, and your rank.
+                Create an account to chronicle your semester and track your trials.
               </p>
 
               <form className="login-form" onSubmit={handleSubmit}>
@@ -60,6 +73,7 @@ export default function Login() {
                   placeholder="you@university.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
 
                 <LabeledInput
@@ -68,41 +82,32 @@ export default function Login() {
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  rightSlot={
-                    <a href="#" className="mono forgot-link">Forgot?</a>
-                  }
+                  required
                 />
 
-                <Checkbox
-                  checked={keepSignedIn}
-                  onChange={setKeepSignedIn}
-                  label="Keep me signed in on this device"
+                <LabeledInput
+                  label="Confirm password"
+                  type="password"
+                  placeholder="••••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                 />
 
                 {error && <p className="mono login-error">{error}</p>}
 
                 <WoodButton type="submit" className="login-submit" disabled={submitting}>
-                  {submitting ? 'Signing in...' : 'Sign In'}
+                  {submitting ? 'Creating account...' : 'Create Account'}
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#241D10" strokeWidth="2.6">
                     <path d="M5 12h14M13 6l6 6-6 6" />
                   </svg>
                 </WoodButton>
               </form>
 
-              <GoldRule label="or" />
-
-              <button className="btn-outline hover-glow sso-btn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5E4826" strokeWidth="2">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 3v18M3 12h18" />
-                </svg>
-                Continue with University SSO
-              </button>
-
               <div className="mono signup-line">
-                New to the realm?{' '}
-                <Link to="/signup" className="signup-link">
-                  Create your account →
+                Already have an account?{' '}
+                <Link to="/login" className="signup-link">
+                  Sign in →
                 </Link>
               </div>
             </ParchmentCard>

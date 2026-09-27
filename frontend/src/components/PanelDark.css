@@ -1,6 +1,8 @@
+/* wood-textured panel, two flavors depending on where it's used */
+
 .panel-dark-light {
   background-image:
-    linear-gradient(160deg, rgba(40,30,18,0.08), rgba(24,18,11,0.13)),
+    /* linear-gradient(160deg, rgba(40,30,18,0.08), rgba(24,18,11,0.13)), */
     url('/assets/wood-panel.jpg');
   background-size: cover;
   background-position: center;

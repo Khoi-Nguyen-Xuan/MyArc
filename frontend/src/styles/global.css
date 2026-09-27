@@ -1,3 +1,4 @@
+/* global resets + shared design tokens, used across all pages */
 
 * {
   box-sizing: border-box;
@@ -10,7 +11,9 @@ body {
   color: #C7BFAE;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: 'Cinzel', serif;
   margin: 0;
 }
@@ -32,25 +35,47 @@ input {
   font-family: 'IBM Plex Sans', sans-serif;
 }
 
+/* page background - stone texture */
 .bg-ambient {
   background-image:
-    linear-gradient(180deg, rgba(8,7,6,0.55), rgba(5,4,3,0.72)),
+    linear-gradient(
+      180deg,
+      rgba(8, 7, 6, 0.55),
+      rgba(5, 4, 3, 0.72)
+    ),
     url('/assets/stone-ambient.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+
+  /* gradient fills screen, stone keeps a stable scale */
+  background-size:
+    100vw 100vh,
+    700px auto;
+
+  background-position:
+    center,
+    top left;
+
+  background-repeat:
+    no-repeat,
+    repeat;
+
   background-color: #322C25;
+
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
+
   position: relative;
+  z-index: 0;
 }
 
+/* gold decorative line under headers etc */
 .gold-underline {
   position: relative;
 }
+
 .gold-underline::after {
   content: '';
   position: absolute;
@@ -61,35 +86,41 @@ input {
   background-image: url('/assets/gold-rule.jpg');
   background-size: cover;
   background-repeat: repeat-x;
-  box-shadow: 0 0 6px rgba(176,141,79,0.35);
+  box-shadow: 0 0 6px rgba(176, 141, 79, 0.35);
 }
 
+/* generic hover glow for buttons / clickable things */
 .hover-glow {
   transition: box-shadow 0.25s ease, transform 0.2s ease;
 }
+
 .hover-glow:hover {
-  box-shadow: 0 0 14px rgba(217,185,122,0.55);
+  box-shadow: 0 0 14px rgba(217, 185, 122, 0.55);
   transform: translateY(-1px);
 }
 
+/* secondary outline button */
 .btn-outline {
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
   border: 1.5px solid #6B5D42;
   color: #C7BFAE;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   cursor: pointer;
 }
+
 .btn-outline:hover {
-  background: rgba(176,141,79,0.14);
+  background: rgba(176, 141, 79, 0.14);
   border-color: #8A7245;
-  box-shadow: 0 0 12px rgba(176,141,79,0.35);
+  box-shadow: 0 0 12px rgba(176, 141, 79, 0.35);
   transform: translateY(-1px);
 }
+
 .btn-outline:active {
   transform: translateY(0);
-  background: rgba(176,141,79,0.22);
+  background: rgba(176, 141, 79, 0.22);
 }
 
+/* corner accent svgs sit absolute inside a position:relative parent */
 .corner {
   position: absolute;
   pointer-events: none;

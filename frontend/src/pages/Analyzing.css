@@ -1,0 +1,172 @@
+.analyzing-page {
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.analyzing-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 0 0 0;
+}
+
+.analyzing-topbar .spark {
+  color: #8A7245;
+  font-size: 15px;
+}
+
+.analyzing-topbar .wordmark.logo-text {
+  font-size: 17px;
+  color: #C7BFAE;
+}
+
+.analyzing-center {
+  flex-grow: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px 60px 20px;
+}
+
+.analyzing-content {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.analyzing-spinner {
+  animation: analyzing-spin 1.1s linear infinite;
+  margin-bottom: 22px;
+}
+
+@keyframes analyzing-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.analyzing-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #D6CDB4;
+  margin-bottom: 12px;
+}
+
+.analyzing-subtitle {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #B7AC90;
+  margin: 0 0 26px 0;
+  max-width: 400px;
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding: 7px 0;
+  color: #7A7266;
+}
+
+.checklist-row svg {
+  flex-shrink: 0;
+}
+
+.checklist-box {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #7A7266;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.checklist-done {
+  color: #453A22;
+}
+
+.checklist-active {
+  color: #423212;
+  font-weight: 600;
+}
+
+.checklist-pending {
+  color: #A69C86;
+}
+
+.pick-order-label {
+  align-self: flex-start;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #B7AC90;
+  padding-bottom: 8px;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
+.pick-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 26px;
+  height: 130px;
+}
+
+.pick-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+}
+
+.pick-slot-done {
+  opacity: 0.85;
+}
+
+.pick-slot-active {
+  box-shadow: 0 0 12px rgba(217,185,122,0.35);
+}
+
+.pick-slot-queued {
+  opacity: 0.5;
+}
+
+.pick-index {
+  font-size: 10px;
+  color: #7A7266;
+}
+
+.pick-code {
+  font-size: 11px;
+  font-weight: 600;
+  color: #D6CDB4;
+}
+
+.pick-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+.pick-progress-fill {
+  height: 100%;
+}
+
+.pick-caption {
+  font-size: 10px;
+  color: #B7AC90;
+}
+
+.analyzing-footnote {
+  font-size: 11px;
+  color: #7A7266;
+}

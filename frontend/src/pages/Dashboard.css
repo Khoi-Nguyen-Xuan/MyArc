@@ -1,0 +1,25 @@
+.dashboard-page {
+  padding: 0 0 0 0;
+  height: 100vh;
+}
+
+.dash-grid {
+  margin: 18px 40px 0 40px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: 1fr; /* Defines exactly 1 row taking all available height */
+  gap: 14px;
+  height: calc(100% - 200px);
+  padding: 0px 100px 100px 100px;
+}
+
+.dash-panel {
+  padding: 18px 20px;
+}
+
+.dash-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #252117;
+}

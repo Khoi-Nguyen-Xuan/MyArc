@@ -1,21 +1,16 @@
 .bg-parchment {
   background-image: url('/assets/parchment.jpg');
-  background-size: cover;
+  /* Force width to stretch, lock height to 100% of container */
+  background-size: 100% 100%; 
   background-position: center;
   background-repeat: no-repeat;
-  background-color: #C7BFAE;
 }
 
 .parchment-card {
   box-sizing: border-box;
-  position: relative;
-  box-shadow: inset 0 0 40px rgba(40,30,15,0.35);
-  padding: 52px 44px 40px 44px;
-}
-
-.parchment-inner-border {
   position: absolute;
-  inset: 8px;
-  border: 1px solid rgba(42,33,24,0.3);
-  pointer-events: none;
+  box-shadow: inset 0 0 40px rgba(40,30,15,0.35);
+  width: calc(100% - 14px);
+  height: calc(100% - 14px);
+  padding: 50px;
 }
