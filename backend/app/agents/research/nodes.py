@@ -15,13 +15,10 @@ from app.agents.research.queries import excluded_web_domains, plan_queries, subr
 from app.agents.research.schemas import ResearchResult, SourceType
 from app.agents.research.sources import FETCH_ERRORS, read_with_tavily
 from app.agents.research.state import PageTask, PlannedQuery, ResearchContext, ResearchState
+from app.external.llm_client import is_setup_error
 from app.external.search_client import SearchClientError, SearchHit
 
 logger = logging.getLogger(__name__)
-
-# HTTP statuses that mean the LLM is misconfigured, not that one page was bad:
-# 401 bad or expired key, 403 no access, 404 unknown model name.
-_SETUP_ERROR_STATUSES = {401, 403, 404}
 
 
 async def plan_searches(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:
@@ -113,7 +110,7 @@ async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> d
     try:
         source, claims = await extract_evidence(runtime.context.llm, task["request"], page, task["title"])
     except Exception as exc:
-        if _is_setup_error(exc):
+        if is_setup_error(exc):
             raise  # bad key or unknown model: every page would fail the same way, so stop the run
         logger.warning("Claim extraction failed, skipping page %s: %s: %s", page.url, type(exc).__name__, exc)
         return {"sources": [], "claims": []}
@@ -166,8 +163,3 @@ async def assemble_result(state: ResearchState, runtime: Runtime[ResearchContext
         queries_run=[str(query) for query in state["queries_run"]],
     )
     return {"result": result}
-
-
-def _is_setup_error(exc: Exception) -> bool:
-    """True for errors no retry or other page can fix. OpenAI's and Anthropic's errors both carry `status_code`."""
-    return getattr(exc, "status_code", None) in _SETUP_ERROR_STATUSES
