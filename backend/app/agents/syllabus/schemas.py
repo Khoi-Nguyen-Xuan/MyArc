@@ -9,6 +9,9 @@ Downstream:
   deadline density and so on;
 - the "Why?" drawer shows `source.quote` so a student can see where a fact
   came from.
+
+Weights above 100% are normal: some courses offer extra marks on purpose
+(CMPUT 201 adds up to 104%). Only totals below 100% get a warning.
 """
 
 from __future__ import annotations
@@ -119,9 +122,14 @@ class SyllabusResult(BaseModel):
     policies: list[Policy] = Field(default_factory=list)
     warnings: list[str] = Field(
         default_factory=list,
-        description='Problems found, e.g. "Weights add up to 95%, not 100%." Shown to the student.',
+        description='Problems found, e.g. "Weights add up to 95%; an assessment may be missing." Shown to the student.',
     )
 
     @property
     def total_weight(self) -> float:
         return sum(assessment.total_weight for assessment in self.assessments)
+
+    @property
+    def extra_credit(self) -> float:
+        """Percent available beyond 100, e.g. 4 when the weights add up to 104%. Intended by the course."""
+        return max(self.total_weight - 100, 0.0)
