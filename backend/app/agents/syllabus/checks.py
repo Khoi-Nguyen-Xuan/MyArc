@@ -4,6 +4,11 @@ Each check describes what's wrong in plain words. The agent sends those
 problems back to the LLM for one repair; whatever is still wrong afterwards
 is shown to the student as a warning.
 
+Quotes that can't be matched are the exception: they are only noted, never
+repaired. PDF text often breaks spacing ("asChatGPT") or splits table cells,
+so an honest quote can fail to match, and re-reading the whole syllabus for
+that cost ~20s while rarely changing the facts.
+
 One check also corrects something itself: page numbers come from where each
 quote is actually found in the document, not from the LLM.
 """
@@ -30,12 +35,15 @@ _ELLIPSIS = re.compile(r"\.\.\.|…")
 _TYPOGRAPHY = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", "|": " "})
 
 
-def check_result(result: SyllabusResult, document: Document) -> tuple[SyllabusResult, list[str]]:
-    """Run every check. Returns the result with verified page numbers, and the problems found."""
-    result, problems = _verify_quotes(result, document)
-    problems += _check_weights(result)
-    problems += _check_dates(result)
-    return result, problems
+def check_result(result: SyllabusResult, document: Document) -> tuple[SyllabusResult, list[str], list[str]]:
+    """Run every check.
+
+    Returns the result with verified page numbers, the problems worth a repair
+    (weights, dates), and notes about quotes that couldn't be matched.
+    """
+    result, quote_notes = _verify_quotes(result, document)
+    problems = _check_weights(result) + _check_dates(result)
+    return result, problems, quote_notes
 
 
 def term_window(term: str | None) -> tuple[date, date] | None:
@@ -54,14 +62,15 @@ def term_window(term: str | None) -> tuple[date, date] | None:
 
 
 def _verify_quotes(result: SyllabusResult, document: Document) -> tuple[SyllabusResult, list[str]]:
-    """Find every quote in the document. Found: take its page from there. Not found: report it."""
-    parts = [(part.page, _normalize(part.text)) for part in document.parts]
-    problems: list[str] = []
+    """Find every quote in the document. Found: take its page from there. Not found: note it."""
+    parts = [(part.page, _squash(part.text)) for part in document.parts]
+    whole = _squash(" ".join(part.text for part in document.parts))  # for quotes that cross a page break
+    notes: list[str] = []
 
     def verify(label: str, source: SourceRef) -> SourceRef:
-        found, page = _locate(source.quote, parts)
+        found, page = _locate(source.quote, parts, whole)
         if not found:
-            problems.append(f'The quote given for {label} is not in the syllabus: "{source.quote}"')
+            notes.append(f"The quote for {label} couldn't be matched exactly in the syllabus text.")
             return source
         return source.model_copy(update={"page": page})
 
@@ -73,23 +82,33 @@ def _verify_quotes(result: SyllabusResult, document: Document) -> tuple[Syllabus
         policy.model_copy(update={"source": verify(f"the {policy.topic.value} policy", policy.source)})
         for policy in result.policies
     ]
-    return result.model_copy(update={"assessments": assessments, "policies": policies}), problems
+    return result.model_copy(update={"assessments": assessments, "policies": policies}), notes
 
 
-def _locate(quote: str, parts: list[tuple[int | None, str]]) -> tuple[bool, int | None]:
-    """Is the quote in the document, and on which page? A quote shortened with "..." matches piece by piece."""
-    pieces = [piece for piece in (_normalize(piece) for piece in _ELLIPSIS.split(quote)) if piece]
+def _locate(quote: str, parts: list[tuple[int | None, str]], whole: str) -> tuple[bool, int | None]:
+    """Is the quote in the document, and on which page? A quote shortened with "..." matches piece by piece.
+
+    Tried on each page first (to get the page number), then on the whole document,
+    for a quote that runs across a page break (found, but the page is unknown).
+    """
+    pieces = [piece for piece in (_squash(piece) for piece in _ELLIPSIS.split(quote)) if piece]
     if not pieces:
         return False, None
     for page, text in parts:
         if all(piece in text for piece in pieces):
             return True, page
+    if all(piece in whole for piece in pieces):
+        return True, None
     return False, None
 
 
-def _normalize(text: str) -> str:
-    """Ignore case, spacing, curly quotes, long dashes and table separators when comparing."""
-    return " ".join(text.translate(_TYPOGRAPHY).lower().split())
+def _squash(text: str) -> str:
+    """Ignore case, ALL whitespace, curly quotes, long dashes and table separators when comparing.
+
+    Whitespace is removed entirely, not just collapsed: PDF text often drops or
+    adds spaces at line wraps ("such asChatGPT"), which would fail an exact match.
+    """
+    return "".join(text.translate(_TYPOGRAPHY).lower().split())
 
 
 def _check_weights(result: SyllabusResult) -> list[str]:
