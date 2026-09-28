@@ -6,7 +6,7 @@ type DecipheredCourseProps = {
   code: string
   title: string
   fileName: string
-  onReupload?: () => void
+  onRemove?: () => void
 }
 
 type DecipheringCourseProps = {
@@ -48,7 +48,11 @@ export default function CourseCard(props: CourseCardProps) {
       {props.status === 'deciphered' && (
         <div className="file-row">
           <span className="mono file-name">{props.fileName}</span>
-          <a href="#" className="reupload-link" onClick={props.onReupload}>Re-upload</a>
+          {props.onRemove && (
+            <button type="button" className="reupload-link" onClick={props.onRemove}>
+              Remove
+            </button>
+          )}
         </div>
       )}
 

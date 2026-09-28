@@ -59,6 +59,11 @@
 }
 
 .reupload-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
   font-size: 11px;
   text-decoration: underline;
   cursor: pointer;

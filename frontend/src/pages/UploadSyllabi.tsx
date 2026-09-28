@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import TopBar from '../components/TopBar'
 import CourseCard from '../components/CourseCard'
 import UploadModal from '../components/UploadModal'
-import { getCourses, getToken } from '../lib/api'
+import { deleteCourse, getCourses, getToken } from '../lib/api'
 import type { CourseResponse } from '../lib/api'
 import './UploadSyllabi.css'
 
@@ -27,6 +27,17 @@ export default function UploadSyllabi() {
     setCourses((prev) => [course, ...prev])
   }
 
+  async function handleRemove(course: CourseResponse) {
+    const label = course.course_code || course.course_name || 'this course'
+    if (!window.confirm(`Remove ${label}? Its analysis will be deleted.`)) return
+    try {
+      await deleteCourse(course.id)
+      setCourses((prev) => prev.filter((c) => c.id !== course.id))
+    } catch {
+      window.alert('Could not remove the course. Is the backend running?')
+    }
+  }
+
   return (
     <div className="bg-ambient">
       <TopBar />
@@ -38,9 +49,19 @@ export default function UploadSyllabi() {
             Present a syllabus scroll for each course — dates, weights and rules are read automatically.
           </p>
         </div>
-        <button className="btn-outline add-course-btn" onClick={() => setModalOpen(true)}>
-          + Add Course
-        </button>
+        <div className="upload-header-actions">
+          <button className="btn-outline add-course-btn" onClick={() => setModalOpen(true)}>
+            + Add Course
+          </button>
+          <button
+            className="btn-outline add-course-btn"
+            onClick={() => navigate('/dashboard')}
+            disabled={courses.length === 0}
+            title={courses.length === 0 ? 'Upload a syllabus first' : undefined}
+          >
+            View Dashboard →
+          </button>
+        </div>
       </div>
 
       <div className="upload-grid">
@@ -57,6 +78,7 @@ export default function UploadSyllabi() {
             code={course.course_code || `#${course.id}`}
             title={course.course_name || 'Untitled course'}
             fileName={course.professor_name || course.course_semester || 'Uploaded'}
+            onRemove={() => handleRemove(course)}
           />
         ))}
 

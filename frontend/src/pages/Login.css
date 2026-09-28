@@ -9,15 +9,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-  height: calc(100vh - 70px);
+  padding: 40px 20px 70px;
+  /* min-height (not height) so a tall card scrolls the page instead of spilling out */
+  min-height: calc(100vh - 70px);
+  box-sizing: border-box;
 }
 
 .login-card-wrap {
   width: 480px;
   max-width: 100%;
   position: relative;
-  height: 70%;
 }
 
 .login-tag {
@@ -30,7 +31,14 @@
 .login-panel {
   padding: 7px;
   box-shadow: 0 10px 26px rgba(0,0,0,0.65);
-  height: 100%;
+}
+
+/* ParchmentCard is absolutely positioned by default (fills a fixed-size
+   panel); here it sits in the flow so the panel wraps the whole form */
+.login-panel > .parchment-card {
+  position: relative;
+  width: 100%;
+  height: auto;
 }
 
 .login-title {

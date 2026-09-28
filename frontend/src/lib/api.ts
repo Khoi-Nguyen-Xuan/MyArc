@@ -99,6 +99,9 @@ export interface CourseResponse {
   ranking: string | null
   point: number | null
   confidence: number | null
+  // recommended study hours/week outside class (null for older courses)
+  weekly_hours_min: number | null
+  weekly_hours_max: number | null
 }
 
 export async function getCourses(): Promise<CourseResponse[]> {
@@ -109,6 +112,10 @@ export async function getCourses(): Promise<CourseResponse[]> {
 export async function getCourse(id: number): Promise<CourseResponse> {
   const { data } = await api.get<CourseResponse>(`/courses/${id}`)
   return data
+}
+
+export async function deleteCourse(id: number): Promise<void> {
+  await api.delete(`/courses/${id}`)
 }
 
 export async function uploadSyllabus(file: File): Promise<CourseResponse> {
@@ -146,6 +153,7 @@ export interface DashboardCurrentState {
   priority_course: string
   busiest_upcoming_week: string
   current_course_tracking: number
+  undated_assessments: number // assessments with no date in the syllabus
   upcoming_weeks: WeekEntry[]
 }
 

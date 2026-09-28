@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
+import axios from 'axios'
 import WoodButton from './WoodButton'
 import PanelDark from './PanelDark'
 import ParchmentCard from './ParchmentCard'
@@ -19,6 +20,8 @@ export default function UploadModal({
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // raw response from the backend, shown so we can check the pipeline output
+  const [result, setResult] = useState<CourseResponse | null>(null)
 
   if (!open) return null
 
@@ -35,9 +38,11 @@ export default function UploadModal({
       const course = await uploadSyllabus(file)
       onUploaded(course)
       setFile(null)
-      onClose()
-    } catch {
-      setError('Upload failed. Make sure the file is a PDF and try again.')
+      setResult(course) // keep the modal open to show the JSON
+    } catch (err) {
+      // FastAPI puts the reason in `detail` (422 bad file, 503 missing API key, ...)
+      const detail = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      setError(typeof detail === 'string' ? detail : 'Upload failed. Is the backend running?')
     } finally {
       setUploading(false)
     }
@@ -47,36 +52,55 @@ export default function UploadModal({
     if (uploading) return // don't allow closing mid-upload
     setFile(null)
     setError(null)
+    setResult(null)
     onClose()
   }
 
   return (
     <div className="upload-modal-backdrop" onClick={handleClose}>
-      <div className="upload-modal-wrap" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`upload-modal-wrap${result ? ' upload-modal-wrap-result' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <PanelDark className="upload-modal-panel">
-          <ParchmentCard style={{ padding: '36px 34px' }}>
+          <ParchmentCard style={{ padding: '36px 34px', overflowY: 'auto' }}>
             <h2 className="upload-modal-title">Present a Syllabus Scroll</h2>
             <p className="upload-modal-subtitle">
-              Upload a PDF syllabus — dates, weights and rules are read automatically.
+              Upload a PDF or Word syllabus — dates, weights and rules are read automatically.
             </p>
 
-            <label className="upload-modal-dropzone">
-              <input type="file" accept="application/pdf" onChange={handleFileChange} hidden />
-              <span className="mono">{file ? file.name : 'Click to choose a PDF'}</span>
-            </label>
+            {!result && (
+              <label className="upload-modal-dropzone">
+                <input
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleFileChange}
+                  hidden
+                />
+                <span className="mono">{file ? file.name : 'Click to choose a PDF or .docx'}</span>
+              </label>
+            )}
 
             {error && <p className="mono upload-modal-error">{error}</p>}
             {uploading && (
               <p className="mono upload-modal-status">Deciphering your syllabus, this may take a moment…</p>
             )}
 
+            {result && (
+              <pre className="mono upload-modal-json">
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            )}
+
             <div className="upload-modal-actions">
               <button className="btn-outline" onClick={handleClose} disabled={uploading}>
-                Cancel
+                {result ? 'Close' : 'Cancel'}
               </button>
-              <WoodButton onClick={handleUpload} disabled={!file || uploading}>
-                {uploading ? 'Uploading...' : 'Upload'}
-              </WoodButton>
+              {!result && (
+                <WoodButton onClick={handleUpload} disabled={!file || uploading}>
+                  {uploading ? 'Uploading...' : 'Upload'}
+                </WoodButton>
+              )}
             </div>
           </ParchmentCard>
         </PanelDark>

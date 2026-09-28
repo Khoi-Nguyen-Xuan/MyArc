@@ -71,3 +71,19 @@
   gap: 12px;
   margin-top: 26px;
 }
+
+/* after an upload the modal grows to show the returned JSON */
+.upload-modal-wrap-result {
+  width: 720px;
+  height: 80vh;
+}
+
+.upload-modal-json {
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(255, 252, 244, 0.35);
+  border: 1px solid #b7ac90;
+  padding: 12px;
+  margin: 0;
+}
