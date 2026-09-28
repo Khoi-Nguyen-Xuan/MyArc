@@ -12,7 +12,13 @@ const tierColor: Record<Tier, string> = {
   D: '#A0605E',
 }
 
-export default function RanksPanel({ courses }: { courses: CourseRank[] }) {
+export default function RanksPanel({
+  courses,
+  onWhy,
+}: {
+  courses: CourseRank[]
+  onWhy: (courseId: number) => void
+}) {
   return (
     // <PanelDark className="dash-panel dash-panel-ranks" showCorners={false}>
     <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }} >
@@ -29,9 +35,10 @@ export default function RanksPanel({ courses }: { courses: CourseRank[] }) {
               <span>Hrs / Week</span>
               <span>Confidence</span>
               <span>Cram-Friendly</span>
+              <span>Why?</span>
             </div>
             {courses.map((c) => (
-              <div key={c.code} className="ranks-row">
+              <div key={c.id} className="ranks-row">
                 <span
                   className="tier-badge"
                   style={{
@@ -46,9 +53,17 @@ export default function RanksPanel({ courses }: { courses: CourseRank[] }) {
                   <span className="ranks-code mono">{c.code}</span>
                   <span className="ranks-title">{c.title}</span>
                 </span>
-                <span className="mono">{c.hoursPerWeek}h</span>
+                <span className="mono">{c.hoursLabel}</span>
                 <span className="mono">{c.confidence}%</span>
                 <span className="mono">{c.crammable ? 'Yes' : 'No'}</span>
+                <button
+                  type="button"
+                  className="mono ranks-why"
+                  onClick={() => onWhy(c.id)}
+                  aria-label={`Why is ${c.code} ranked ${c.tier}?`}
+                >
+                  Why?
+                </button>
               </div>
             ))}
           </div>

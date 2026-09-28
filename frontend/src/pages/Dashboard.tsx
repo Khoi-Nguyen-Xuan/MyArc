@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AlertBar from '~/components/dashboard/AlertBar'
 import RanksPanel from '~/components/dashboard/RanksPanel'
 import WeeksPanel from '~/components/dashboard/WeeksPanel'
+import CourseDrawer from '~/components/dashboard/CourseDrawer'
 import type { CourseRank, WeekLoad, Tier } from '~/components/dashboard/types'
 import './Dashboard.css'
 import TopBar from '~/components/TopBar'
@@ -12,19 +13,15 @@ import type { CourseResponse, DashboardCurrentState } from '~/lib/api'
 const VALID_TIERS: Tier[] = ['S', 'A', 'B', 'C', 'D']
 
 function toCourseRank(course: CourseResponse): CourseRank | null {
-  // ranking is only set once the real analysis pipeline runs (still a
-  // placeholder stub server-side right now) - skip courses without one
-  // rather than inventing a fake tier for them
+  // ranking is only set once the real analysis pipeline runs
   if (!course.ranking || !VALID_TIERS.includes(course.ranking as Tier)) return null
 
   return {
+    id: course.id,
     code: course.course_code || `#${course.id}`,
     title: course.course_name || 'Untitled course',
     tier: course.ranking as Tier,
-    // NOTE: backend's "workload" is a 0-10 difficulty score, not literal
-    // hours/week - reused here as a placeholder until the pipeline
-    // computes a real weekly-hours estimate
-    hoursPerWeek: course.workload ?? 0,
+    hoursLabel: formatHours(course.weekly_hours_min, course.weekly_hours_max),
     confidence: Math.round((course.confidence ?? 0) * 10), // backend is 0-10, UI wants 0-100
     // heuristic: a low continuous-study-requirement score means it can be
     // crammed closer to the exam - not a field the backend exposes directly
@@ -32,23 +29,39 @@ function toCourseRank(course: CourseResponse): CourseRank | null {
   }
 }
 
-function formatWeekLabel(isoDate: string) {
-  return new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
+function formatHours(min: number | null, max: number | null) {
+  if (min == null || max == null) return '—'
+  return min === max ? `${min}h` : `${min}–${max}h`
 }
 
+function formatWeekLabel(isoDate: string) {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
+}
+
+// PLACEHOLDER until deadline dates are extracted reliably (most assessments
+// come back undated): a typical-semester load curve
+const USE_PLACEHOLDER_WEEKS = true
+const PLACEHOLDER_LOADS = [35, 45, 60, 80, 55, 40, 70, 90]
+
 function toWeekLoads(state: DashboardCurrentState): WeekLoad[] {
-  return state.upcoming_weeks.map((week) => {
-    const testCount = week.dates.reduce((sum, d) => sum + d.course_test.length, 0)
+  return state.upcoming_weeks.map((week, index) => {
+    // share of final grades due this week, across all courses (0.25 = 25%)
+    const weight = week.dates.reduce(
+      (sum, d) => sum + d.course_test.reduce((s, t) => s + t.score_percent, 0),
+      0,
+    )
     const hasHeavyItem = week.dates.some((d) =>
       d.course_test.some((t) => ['midterm', 'exam', 'final'].includes(t.type.toLowerCase())),
     )
+    // real load: 25% of grades due in one week fills the bar
+    const realLoad = Math.min(100, Math.round(weight * 400))
+    const placeholder = USE_PLACEHOLDER_WEEKS ? PLACEHOLDER_LOADS[index % PLACEHOLDER_LOADS.length] : 0
     return {
       label: formatWeekLabel(week.start_date),
-      // NOTE: the backend doesn't compute a load % or hours estimate per
-      // week yet - this is a rough client-side placeholder based on how
-      // many assessments land in the week, not real workload data
-      load: Math.min(100, testCount * 25),
-      hours: testCount * 3,
+      load: Math.max(realLoad, placeholder),
+      weightPercent: Math.round(weight * 100),
+      estimated: placeholder > realLoad,
       milestone: hasHeavyItem,
     }
   })
@@ -59,6 +72,7 @@ export default function Dashboard() {
   const [courses, setCourses] = useState<CourseResponse[]>([])
   const [state, setState] = useState<DashboardCurrentState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [whyCourseId, setWhyCourseId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!getToken()) {
@@ -99,10 +113,15 @@ export default function Dashboard() {
         )}
 
         <div className="dash-grid">
-          <RanksPanel courses={courseRanks} />
-          <WeeksPanel weeks={weekLoads} />
+          <RanksPanel courses={courseRanks} onWhy={setWhyCourseId} />
+          <WeeksPanel weeks={weekLoads} undatedCount={state?.undated_assessments ?? 0} />
         </div>
       </div>
+
+      <CourseDrawer
+        course={courses.find((c) => c.id === whyCourseId) ?? null}
+        onClose={() => setWhyCourseId(null)}
+      />
     </div>
   )
 }

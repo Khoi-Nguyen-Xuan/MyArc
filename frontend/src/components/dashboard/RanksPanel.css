@@ -15,7 +15,7 @@
 .ranks-header,
 .ranks-row {
   display: grid;
-  grid-template-columns: 48px 1fr 76px 84px 100px;
+  grid-template-columns: 48px 1fr 76px 84px 100px 52px;
   align-items: center;
   gap: 10px;
   padding: 8px 0;
@@ -71,4 +71,18 @@
 .parchment-content {
   position: relative;
   z-index: 1;
+}
+.ranks-why {
+  background: rgba(255, 252, 244, 0.35);
+  border: 1px solid #6B5D42;
+  color: #2A2118;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.ranks-why:hover,
+.ranks-why:focus-visible {
+  background: #2A2118;
+  color: #F1E6CC;
 }

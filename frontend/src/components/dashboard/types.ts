@@ -4,10 +4,11 @@
 export type Tier = 'S' | 'A' | 'B' | 'C' | 'D'
 
 export type CourseRank = {
+  id: number // backend course id, used to open the "Why?" drawer
   code: string
   title: string
   tier: Tier
-  hoursPerWeek: number
+  hoursLabel: string // e.g. "6–9h", or "—" when unknown
   confidence: number // 0-100
   crammable: boolean
 }
@@ -15,7 +16,8 @@ export type CourseRank = {
 export type WeekLoad = {
   label: string
   load: number // 0-100, drives the color band
-  hours: number // hours of work that week, shown on the right
+  weightPercent: number // % of final grades due that week (real data only)
+  estimated: boolean // true = load comes from the placeholder pattern, not real deadlines
   milestone?: boolean // true = has a notable deadline that week (shows a dot)
 }
 

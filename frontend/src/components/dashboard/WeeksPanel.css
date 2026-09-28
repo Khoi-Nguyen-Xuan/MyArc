@@ -50,7 +50,7 @@
 }
 
 .weeks-hours {
-  width: 26px;
+  width: 52px;
   flex-shrink: 0;
   font-size: 11px;
   text-align: right;
@@ -96,4 +96,29 @@
   justify-content: center;
   padding: 10px 30px 10px 30px;
   box-sizing: border-box;
+}
+.weeks-note {
+  font-size: 11px;
+  color: #F1E6CC;
+  margin: 12px 0 0 0;
+  text-align: center;
+  position: relative;
+}
+
+.weeks-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 11px;
+  color: #F1E6CC;
+  position: relative;
+}
+
+.weeks-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  vertical-align: -1px;
 }

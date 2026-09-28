@@ -3,42 +3,57 @@ import type { WeekLoad } from './types'
 import './WeeksPanel.css'
 import WoodenBoard from '../../components/WoodenBoard'
 
-function loadColor(load: number) {
-  if (load >= 75) return '#d22623' // High load: Bright Coral/Red
-  if (load >= 50) return '#c87400' // Mid load:  Bright Warm Gold/Amber
-  return '#099d0e'                 // Low load:  Bright Fresh Green
+// green / yellow / red bands for the week's load (0-100)
+function loadLevel(load: number) {
+  if (load >= 75) return { label: 'Heavy', color: '#d22623' }
+  if (load >= 50) return { label: 'Busy', color: '#e0a800' }
+  return { label: 'Light', color: '#099d0e' }
 }
-export default function WeeksPanel({ weeks }: { weeks: WeekLoad[] }) {
+
+function rowTitle(w: WeekLoad) {
+  const real = w.weightPercent > 0 ? `${w.weightPercent}% of your grades due this week` : 'No dated deadlines this week'
+  return w.estimated ? `${real} (bar is a placeholder estimate)` : real
+}
+
+export default function WeeksPanel({ weeks, undatedCount = 0 }: { weeks: WeekLoad[]; undatedCount?: number }) {
+  const anyEstimated = weeks.some((w) => w.estimated)
   return (
-    // <PanelDark className="dash-panel dash-panel-weeks" showCorners={false}>
     <WoodenBoard style={{ position: 'relative' }}>
       <div className="paper-header-bg">
         <div className="dash-panel-title ">Next Eight Weeks</div>
       </div>
       <GoldRule />
       <div className="weeks-list">
-        {weeks.map((w) => (
-          <div key={w.label} className="weeks-row paper-bg">
-            <span className="mono weeks-label">
-              {/* {w.milestone && <span className="weeks-dot" />} */}
-              {w.label}
-            </span>
-            <div className="weeks-bar-track">
-              <div
-                className="weeks-bar-fill"
-                style={{ width: `${w.load}%`, background: loadColor(w.load) }}
-              />
+        {weeks.map((w) => {
+          const level = loadLevel(w.load)
+          return (
+            <div key={w.label} className="weeks-row paper-bg" title={rowTitle(w)}>
+              <span className="mono weeks-label">{w.label}</span>
+              <div className="weeks-bar-track">
+                <div className="weeks-bar-fill" style={{ width: `${w.load}%`, background: level.color }} />
+              </div>
+              <span className="mono weeks-hours" style={{ color: level.color }}>
+                {level.label}
+              </span>
             </div>
-            <span className="mono weeks-hours" style={{ color: loadColor(w.load) }}>
-              {w.hours}h
-            </span>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      <div className="mono weeks-legend">
+        <span><i style={{ background: '#099d0e' }} /> Light</span>
+        <span><i style={{ background: '#e0a800' }} /> Busy</span>
+        <span><i style={{ background: '#d22623' }} /> Heavy</span>
+      </div>
+      {anyEstimated && (
+        <p className="mono weeks-note">
+          Estimated view — {undatedCount > 0 ? `${undatedCount} assessments have no dates yet, so ` : ''}
+          weeks follow a typical semester pattern.
+        </p>
+      )}
       <a href="#" className="mono weeks-see-all gold-underline">
         See Full Calendar &rarr;
       </a>
-    </WoodenBoard >
-    // </PanelDark>
+    </WoodenBoard>
   )
 }
