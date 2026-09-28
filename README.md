@@ -1,6 +1,6 @@
 # MyArc
 
-MyArc is a multi-agent semester planning platform that helps students quickly see **which courses need the most attention, when their workload will peak, and why**.
+A multi-agent semester planning platform that helps students quickly see **which courses need the most attention, when their workload will peak, and why**.
 
 Motivation: Students can already ask tools like ChatGPT, Claude, or Gemini to analyze their semester, but chatbox responses often make it difficult to see the bigger picture **quickly**. MyArc takes a different approach: instead of acting as another chatbot, it uses a team of AI agents behind the scenes to analyze course syllabi, deadlines, workload patterns, and external course discussions from sources such as Reddit and RateMyProfessors.
 
