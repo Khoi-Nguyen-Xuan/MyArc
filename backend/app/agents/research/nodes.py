@@ -15,6 +15,7 @@ from app.agents.research.queries import excluded_web_domains, plan_queries, subr
 from app.agents.research.schemas import ResearchResult, SourceType
 from app.agents.research.sources import FETCH_ERRORS, read_with_tavily
 from app.agents.research.state import PageTask, PlannedQuery, ResearchContext, ResearchState
+from app.core.timing import log_duration
 from app.external.llm_client import is_setup_error
 from app.external.search_client import SearchClientError, SearchHit
 
@@ -45,7 +46,9 @@ async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) ->
             return context.reddit.find_threads(subreddit, query.text, limit)
         return context.search.search(query.text, max_results=limit, exclude_domains=excluded)
 
-    outcomes = await asyncio.gather(*(run(query) for query in queries), return_exceptions=True)
+    label = f"{state['request'].course_code} · research round {state['round_number']} · {len(queries)} searches"
+    with log_duration(label):
+        outcomes = await asyncio.gather(*(run(query) for query in queries), return_exceptions=True)
 
     hits: list[SearchHit] = []
     failures = 0
@@ -85,10 +88,12 @@ async def read_pages(state: ResearchState, runtime: Runtime[ResearchContext]) ->
         len(web_urls),
     )
 
-    reddit_pages, web_pages = await asyncio.gather(
-        runtime.context.reddit.read_threads(reddit_urls) if reddit_urls else _nothing(),
-        read_with_tavily(runtime.context.search, web_urls) if web_urls else _nothing(),
-    )
+    label = f"{state['request'].course_code} · research round {state['round_number']} · read {len(to_read)} pages"
+    with log_duration(label):
+        reddit_pages, web_pages = await asyncio.gather(
+            runtime.context.reddit.read_threads(reddit_urls) if reddit_urls else _nothing(),
+            read_with_tavily(runtime.context.search, web_urls) if web_urls else _nothing(),
+        )
     pages = reddit_pages + web_pages
     if pages:
         logger.info("Read %d of %d pages. Extracting claims, 15-40s...", len(pages), len(to_read))
@@ -108,7 +113,9 @@ async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> d
     """
     page = task["page"]
     try:
-        source, claims = await extract_evidence(runtime.context.llm, task["request"], page, task["title"])
+        # these run in parallel, so the round's extract time is the SLOWEST page, not the sum
+        with log_duration(f"{task['request'].course_code} · extract claims ({len(page.content)} chars) {page.url}"):
+            source, claims = await extract_evidence(runtime.context.llm, task["request"], page, task["title"])
     except Exception as exc:
         if is_setup_error(exc):
             raise  # bad key or unknown model: every page would fail the same way, so stop the run

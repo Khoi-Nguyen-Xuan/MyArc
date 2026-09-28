@@ -13,12 +13,14 @@ from app.agents.evaluator.schemas import CourseEvaluation
 from app.agents.evaluator.scoring import assessment_weighting, confidence, deadline_pressure, student_review_difficulty
 from app.agents.research.schemas import ResearchResult
 from app.agents.syllabus.schemas import SyllabusResult
+from app.core.timing import log_duration
 
 
 async def evaluate_course(llm: BaseChatModel, syllabus: SyllabusResult, research: ResearchResult) -> CourseEvaluation:
     computed = [deadline_pressure(syllabus), assessment_weighting(syllabus), student_review_difficulty(research)]
     facts = build_facts(syllabus, research, computed)
-    judgment = await ask_for_judgment(llm, facts)
+    with log_duration(f"{syllabus.request.course_code} · evaluator LLM call"):
+        judgment = await ask_for_judgment(llm, facts)
     judged, weekly_hours = to_scores(judgment, facts)
     trust, reasons = confidence(syllabus, research)
 

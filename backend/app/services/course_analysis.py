@@ -19,6 +19,7 @@ from app.agents.research.state import ResearchContext
 from app.agents.syllabus.agent import run_syllabus_agent
 from app.agents.syllabus.schemas import SyllabusRequest, SyllabusResult
 from app.config import settings
+from app.core.timing import StageTimer
 from app.external.llm_client import create_chat_model
 from app.external.search_client import SearchClient, SearchClientError
 from app.utils.documents import load_document
@@ -52,19 +53,25 @@ async def analyze_syllabus(
 ) -> CourseAnalysis:
     """Analyze one course. Raises DocumentError or AnalysisError (student's file), SetupError (server)."""
     _require_keys()
-    document = load_document(data, file_name)
+    timer = StageTimer(file_name)
+    with timer.stage("load document"):
+        document = load_document(data, file_name)
     llm = create_chat_model(settings.llm_model, api_key=settings.openai_api_key, timeout_seconds=LLM_TIMEOUT_SECONDS)
 
     logger.info("Reading syllabus %s", file_name)
-    syllabus = await run_syllabus_agent(llm, SyllabusRequest(course_code=course_code, term=term), document)
+    with timer.stage("syllabus agent"):
+        syllabus = await run_syllabus_agent(llm, SyllabusRequest(course_code=course_code, term=term), document)
     if not syllabus.request.course_code:
         raise AnalysisError("We couldn't find the course code in this syllabus. Please enter it and upload again.")
 
     logger.info("Researching %s", syllabus.request.course_code)
-    research, research_warnings = await _research(llm, syllabus)
+    with timer.stage("research agent"):
+        research, research_warnings = await _research(llm, syllabus)
 
     logger.info("Evaluating %s", syllabus.request.course_code)
-    evaluation = await evaluate_course(llm, syllabus, research)
+    with timer.stage("evaluator"):
+        evaluation = await evaluate_course(llm, syllabus, research)
+    logger.info(timer.summary())
     if research_warnings:
         evaluation = evaluation.model_copy(update={"warnings": [*evaluation.warnings, *research_warnings]})
     return CourseAnalysis(syllabus=syllabus, research=research, evaluation=evaluation)
