@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     tavily_api_key: str = ""
     llm_model: str = "openai:gpt-5-mini"
+    # how hard reasoning models (gpt-5*, o-series) think before answering:
+    # "minimal" | "low" | "medium" | "high". Lower is much faster; "" = model default (medium).
+    # Ignored for models that don't reason.
+    llm_reasoning_effort: str = "low"
     reddit_user_agent: str = ""
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
