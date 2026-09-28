@@ -57,8 +57,8 @@ CRITERION_WEIGHTS: dict[Criterion, float] = {
 
 # Fixed cut-offs on `point`
 RANK_CUTOFFS: list[tuple[Rank, float]] = [
-    (Rank.S, 70),
-    (Rank.A, 65),
+    (Rank.S, 80),
+    (Rank.A, 70),
     (Rank.B, 50),
     (Rank.C, 35),
     (Rank.D, 0),
