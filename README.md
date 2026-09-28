@@ -34,7 +34,7 @@ Agent Orchestration
    ├── Syllabus Agent
    ├── Research Agent
    ├── Evaluator Agent
-   └── Critic Agent
+   └── Critic Agent (planned)
    ↓
 Structured JSON
    ↓
@@ -42,6 +42,32 @@ Dashboard / Rankings / Calendar
 ```
 
 The system uses a hybrid approach where LLMs handle reasoning and interpretation, while traditional backend logic handles deterministic tasks such as scoring, sorting, dates, storage, and validation.
+
+## Agents
+
+One syllabus upload runs three agents in order: **Syllabus → Research → Evaluator**.
+
+**Syllabus Agent** (`app/agents/syllabus/`)
+Reads the PDF or .docx and extracts the course code, title, term, instructors, graded assessments (weights and dates) and key policies. Code checks every quote against the file, and the agent gets one chance to fix any problems.
+
+**Research Agent** (`app/agents/research/`)
+A LangGraph agent that searches Reddit and the web (Tavily) for what students say about the course. It returns short, cited claims, each tagged as making the course sound harder, easier or neutral, with a relevance score.
+
+**Evaluator Agent** (`app/agents/evaluator/`)
+Combines both results into six scores from 0 to 100:
+
+| Criterion | Weight | Scored by |
+|---|---|---|
+| Workload | 0.25 | LLM |
+| Conceptual difficulty | 0.20 | LLM |
+| Deadline pressure | 0.20 | Code |
+| Assessment weighting | 0.10 | Code |
+| Continuous study | 0.10 | LLM |
+| Student review difficulty | 0.15 | Code |
+
+The weighted total gives the course's point and its rank: S ≥ 80, A ≥ 65, B ≥ 50, C ≥ 35, D otherwise. The LLM cites evidence by ID, so every piece of evidence shown is a real syllabus line or student post.
+
+The full flow is in `app/services/course_analysis.py`. It runs behind `POST /courses/upload-syllabus` and saves the result to Postgres.
 
 ## Tech Stack
 
