@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { NavLink } from 'react-router-dom'
 import './TopBar.css'
 
 type TopBarProps = {
@@ -9,11 +10,14 @@ type TopBarProps = {
   /** pass true for the footer-style bar used at bottom of Upload Syllabi */
   variant?: 'top' | 'bottom'
 }
-const navItems = ['Realm', 'Trials', 'Quests', "Season's Toll", 'Archive']
+const navItems = [
+  { label: 'Home', to: '/' },
+  { label: 'Course', to: '/upload-syllabi' },
+  { label: 'Calendar', to: '/calendar' },
+  { label: 'Dashboard', to: '/dashboard' },
+]
 
 export default function TopBar({ variant = 'top' }: TopBarProps) {
-  const [activeNav, setActiveNav] = useState('Realm')
-  
   return (
     <div className={`topbar ${variant === 'bottom' ? 'topbar-bottom' : 'topbar-top'}`}>
       <div className="topbar-side">
@@ -21,14 +25,17 @@ export default function TopBar({ variant = 'top' }: TopBarProps) {
       </div>
       {/* <div className="topbar-side">{right}</div> */}
       <div className="dash-nav-links">
-        {navItems.map((item) => (
-          <span
-            key={item}
-            className={`mono dash-nav-link ${activeNav === item ? 'dash-nav-link-active' : ''}`}
-            onClick={() => setActiveNav(item)}
+        {navItems.map(({ label, to }) => (
+          <NavLink
+            key={label}
+            to={to}
+            end
+            className={({ isActive }) =>
+              `mono dash-nav-link${isActive ? ' dash-nav-link-active' : ''}`
+            }
           >
-            {item}
-          </span>
+            {label}
+          </NavLink>
         ))}
       </div>
 

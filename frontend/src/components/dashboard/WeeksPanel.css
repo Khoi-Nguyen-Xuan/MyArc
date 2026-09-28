@@ -16,6 +16,40 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.weeks-row::before,
+.weeks-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 220, 145, 0.9);
+  box-shadow: 0 0 8px 2px rgba(228, 185, 95, 0.65);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.weeks-row::before {
+  top: 0;
+}
+
+.weeks-row::after {
+  bottom: 0;
+}
+
+.weeks-row:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+}
+
+.weeks-row:hover::before,
+.weeks-row:hover::after {
+  opacity: 1;
 }
 
 .weeks-label {
@@ -121,4 +155,10 @@
   height: 10px;
   margin-right: 5px;
   vertical-align: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weeks-row {
+    transition: none;
+  }
 }
