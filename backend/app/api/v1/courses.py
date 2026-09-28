@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, Upl
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.course_codes import is_course_code
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.course import CourseResponse
@@ -25,6 +26,11 @@ async def upload_syllabus(
     user: User = Depends(get_current_user),
 ):
     """Analyze a syllabus with the agents and save it as a course. Takes a few minutes."""
+    if course_code and not is_course_code(course_code):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f'"{course_code}" doesn\'t look like a course code. Use the form "CMPUT 201".',
+        )
     file_bytes = await pdfFile.read()
     try:
         course = await course_service.create_course_from_syllabus(

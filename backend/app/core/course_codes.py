@@ -25,6 +25,11 @@ def normalize_course_code(value: str) -> str:
     return f"{subject} {number}{suffix or ''}"
 
 
+def is_course_code(value: str) -> bool:
+    """True for something a student could type as a course code: "CMPUT 201", "cmput201", "MATH 125A"."""
+    return re.fullmatch(r"[A-Z]{2,}\s*\d{3}[A-Z]?", " ".join(value.upper().split())) is not None
+
+
 def normalize_course_title(value: str) -> str:
     """Title-case a course name written in ALL CAPS or all lowercase:
     "PRACTICAL PROG METHODOLOGY" -> "Practical Prog Methodology".

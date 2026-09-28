@@ -9,9 +9,11 @@
 }
 
 .upload-modal-wrap {
-  width: 420px;
+  width: 460px;
   max-width: 90vw;
-  height: 400px;
+  /* taller now that course code + term sit above the file picker */
+  height: 580px;
+  max-height: 92vh;
 }
 
 .upload-modal-panel {
@@ -72,20 +74,67 @@
   margin-top: 26px;
 }
 
-/* after an upload the modal grows to show the returned JSON */
+/* result card shown after a successful upload */
 .upload-modal-wrap-result {
-  width: 720px;
-  height: 80vh;
+  height: 440px;
 }
 
-.upload-modal-json {
-  font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
+.upload-result {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.upload-result-course {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.upload-result-tier {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border: 2px solid #1b170e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #1b170e;
+}
+
+.upload-result-code {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1408;
+}
+
+.upload-result-name {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  color: #2a2118;
+}
+
+.upload-result-rank {
+  font-size: 13px;
+  color: #3a3020;
+  margin: 18px 0 0 0;
+}
+
+.upload-result-quote {
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #2a2118;
+  margin: 12px 0 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid #8a6b33;
   background: rgba(255, 252, 244, 0.35);
-  border: 1px solid #b7ac90;
-  padding: 12px;
-  margin: 0;
+  text-align: left;
 }
 
 .upload-stage-list {
@@ -136,4 +185,17 @@
 @keyframes upload-stage-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.upload-modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.upload-modal-hint {
+  color: #9a2b2b;
+  font-size: 11px;
+  margin: -4px 0 0 0;
 }

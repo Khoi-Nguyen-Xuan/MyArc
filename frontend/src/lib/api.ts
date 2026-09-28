@@ -118,9 +118,13 @@ export async function deleteCourse(id: number): Promise<void> {
   await api.delete(`/courses/${id}`)
 }
 
-export async function uploadSyllabus(file: File): Promise<CourseResponse> {
+// courseCode lets the backend start researching right away, in parallel with
+// reading the syllabus; term is e.g. "Fall 2026"
+export async function uploadSyllabus(file: File, courseCode: string, term: string): Promise<CourseResponse> {
   const formData = new FormData()
   formData.append('pdfFile', file)
+  formData.append('course_code', courseCode)
+  formData.append('term', term)
   const { data } = await api.post<CourseResponse>('/courses/upload-syllabus', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 import WoodButton from './WoodButton'
 import PanelDark from './PanelDark'
 import ParchmentCard from './ParchmentCard'
+import LabeledInput from './LabeledInput'
 import { uploadSyllabus } from '../lib/api'
 import type { CourseResponse } from '../lib/api'
 import './UploadModal.css'
@@ -17,6 +19,20 @@ const UPLOAD_STAGES = ['Parsing syllabus', 'Searching for student reviews', 'Eva
 
 type StageStatus = 'done' | 'active' | 'pending'
 
+const DEFAULT_TERM = 'Fall 2026' // the only term for now
+
+// "CMPUT 201", "cmput201", "MATH 125A" - same rule as the backend's is_course_code
+const COURSE_CODE = /^[A-Za-z]{2,}\s*\d{3}[A-Za-z]?$/
+
+// same tier colours as the dashboard's Ranks panel
+const TIER_COLORS: Record<string, string> = {
+  S: '#C9A96E',
+  A: '#8A9E5E',
+  B: '#7A8FA0',
+  C: '#A08A5E',
+  D: '#A0605E',
+}
+
 export default function UploadModal({
   open,
   onClose,
@@ -26,10 +42,13 @@ export default function UploadModal({
   onClose: () => void
   onUploaded: (course: CourseResponse) => void
 }) {
+  const navigate = useNavigate()
   const [file, setFile] = useState<File | null>(null)
+  const [courseCode, setCourseCode] = useState('')
+  const [term, setTerm] = useState(DEFAULT_TERM)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // raw response from the backend, shown so we can check the pipeline output
+  // the analyzed course, shown as a summary card once the upload finishes
   const [result, setResult] = useState<CourseResponse | null>(null)
   const [stageIndex, setStageIndex] = useState(0)
 
@@ -47,20 +66,24 @@ export default function UploadModal({
 
   if (!open) return null
 
+  const codeIsValid = COURSE_CODE.test(courseCode.trim())
+  const canUpload = !!file && codeIsValid && term.trim() !== '' && !uploading
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null)
     setError(null)
   }
 
   async function handleUpload() {
-    if (!file) return
+    if (!canUpload || !file) return
     setUploading(true)
     setError(null)
     try {
-      const course = await uploadSyllabus(file)
+      const course = await uploadSyllabus(file, courseCode.trim(), term.trim())
       onUploaded(course)
       setFile(null)
-      setResult(course) // keep the modal open to show the JSON
+      setCourseCode('')
+      setResult(course) // keep the modal open to show the result card
     } catch (err) {
       // FastAPI puts the reason in `detail` (422 bad file, 503 missing API key, ...)
       const detail = axios.isAxiosError(err) ? err.response?.data?.detail : null
@@ -73,6 +96,8 @@ export default function UploadModal({
   function handleClose() {
     if (uploading) return // don't allow closing mid-upload
     setFile(null)
+    setCourseCode('')
+    setTerm(DEFAULT_TERM)
     setError(null)
     setResult(null)
     onClose()
@@ -87,13 +112,34 @@ export default function UploadModal({
         <PanelDark className="upload-modal-panel">
           <ParchmentCard style={{ padding: '36px 34px', overflowY: 'auto' }}>
             <h2 className="upload-modal-title">
-              {uploading ? 'Deciphering Your Scroll' : 'Present a Syllabus Scroll'}
+              {result ? 'Scroll Deciphered' : uploading ? 'Deciphering Your Scroll' : 'Present a Syllabus Scroll'}
             </h2>
-            <p className="upload-modal-subtitle">
-              {uploading
-                ? `${file?.name ?? 'Your syllabus'} is being read — this takes a moment.`
-                : 'Upload a PDF or Word syllabus — dates, weights and rules are read automatically.'}
-            </p>
+            {!result && (
+              <p className="upload-modal-subtitle">
+                {uploading
+                  ? `${file?.name ?? 'Your syllabus'} is being read — this takes a moment.`
+                  : 'Upload a PDF or Word syllabus — dates, weights and rules are read automatically.'}
+              </p>
+            )}
+
+            {!uploading && !result && (
+              <div className="upload-modal-fields">
+                <LabeledInput
+                  label="Course code"
+                  placeholder="e.g. CMPUT 201, BIOL 207, CHEM 101"
+                  value={courseCode}
+                  onChange={(e) => {
+                    setCourseCode(e.target.value)
+                    setError(null)
+                  }}
+                  autoFocus
+                />
+                <LabeledInput label="Term" value={term} onChange={(e) => setTerm(e.target.value)} />
+                {courseCode.trim() !== '' && !codeIsValid && (
+                  <p className="mono upload-modal-hint">Use the form "CMPUT 201".</p>
+                )}
+              </div>
+            )}
 
             {!uploading && !result && (
               <label className="upload-modal-dropzone">
@@ -121,18 +167,16 @@ export default function UploadModal({
               </div>
             )}
 
-            {result && (
-              <pre className="mono upload-modal-json">
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            )}
+            {result && <UploadResult course={result} />}
 
             <div className="upload-modal-actions">
               <button className="btn-outline" onClick={handleClose} disabled={uploading}>
                 {result ? 'Close' : 'Cancel'}
               </button>
-              {!result && (
-                <WoodButton onClick={handleUpload} disabled={!file || uploading}>
+              {result ? (
+                <WoodButton onClick={() => navigate('/dashboard')}>View Dashboard →</WoodButton>
+              ) : (
+                <WoodButton onClick={handleUpload} disabled={!canUpload}>
                   {uploading ? 'Working…' : 'Upload'}
                 </WoodButton>
               )}
@@ -140,6 +184,27 @@ export default function UploadModal({
           </ParchmentCard>
         </PanelDark>
       </div>
+    </div>
+  )
+}
+
+function UploadResult({ course }: { course: CourseResponse }) {
+  const tier = course.ranking ?? '?'
+  return (
+    <div className="upload-result">
+      <div className="upload-result-course">
+        <span className="upload-result-tier" style={{ backgroundColor: TIER_COLORS[tier] ?? '#B7AC90' }}>
+          {tier}
+        </span>
+        <div>
+          <div className="mono upload-result-code">{course.course_code ?? 'Course'}</div>
+          <div className="upload-result-name">{course.course_name ?? 'Untitled course'}</div>
+        </div>
+      </div>
+      <p className="upload-result-rank">
+        This course is ranked <strong>{tier}-tier</strong>.
+      </p>
+      {course['short-review'] && <blockquote className="upload-result-quote">“{course['short-review']}”</blockquote>}
     </div>
   )
 }
