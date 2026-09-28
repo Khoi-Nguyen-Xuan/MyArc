@@ -4,10 +4,11 @@ import './WeeksPanel.css'
 import WoodenBoard from '../../components/WoodenBoard'
 
 // green / yellow / red bands for the week's load (0-100)
+// `text` is a darker shade for the label, so it stays readable on the light row
 function loadLevel(load: number) {
-  if (load >= 75) return { label: 'Heavy', color: '#d22623' }
-  if (load >= 50) return { label: 'Busy', color: '#e0a800' }
-  return { label: 'Light', color: '#099d0e' }
+  if (load >= 75) return { label: 'Heavy', color: '#d22623', text: '#b3261e' }
+  if (load >= 50) return { label: 'Busy', color: '#e0a800', text: '#8a5a00' }
+  return { label: 'Light', color: '#099d0e', text: '#0b7a10' }
 }
 
 function rowTitle(w: WeekLoad) {
@@ -32,7 +33,7 @@ export default function WeeksPanel({ weeks, undatedCount = 0 }: { weeks: WeekLoa
               <div className="weeks-bar-track">
                 <div className="weeks-bar-fill" style={{ width: `${w.load}%`, background: level.color }} />
               </div>
-              <span className="mono weeks-hours" style={{ color: level.color }}>
+              <span className="mono weeks-hours" style={{ color: level.text, fontWeight: 600 }}>
                 {level.label}
               </span>
             </div>

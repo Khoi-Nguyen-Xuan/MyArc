@@ -9,8 +9,9 @@
   grid-template-columns: 1.4fr 1fr;
   grid-template-rows: 1fr; /* Defines exactly 1 row taking all available height */
   gap: 14px;
-  height: calc(100% - 200px);
-  padding: 0px 100px 100px 100px;
+  /* shorter than the viewport so the panels end with space below them */
+  height: calc(100% - 250px);
+  padding: 0px 100px 40px 100px;
 }
 
 .dash-panel {

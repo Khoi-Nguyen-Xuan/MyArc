@@ -64,8 +64,10 @@
 }
 
 .add-course-tile {
-  background: transparent;
-  border: 1px dashed #3A342A;
+  background: rgba(15, 12, 6, 0.5);
+  border: 2px dashed rgba(201, 169, 110, 0.7);
+  border-radius: 4px;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,4 +94,10 @@
 .progress-caption-small {
   font-size: 12px;
   color: #B7AC90;
+}
+
+.add-course-tile:hover {
+  border-color: #E6CD93;
+  background: rgba(201, 169, 110, 0.12);
+  color: #F1E6CC;
 }

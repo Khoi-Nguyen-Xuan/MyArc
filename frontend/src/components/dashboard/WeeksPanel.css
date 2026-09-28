@@ -6,10 +6,10 @@
 }
 
 .weeks-list {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
 .weeks-row {
@@ -143,7 +143,7 @@
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 11px;
   color: #F1E6CC;
   position: relative;

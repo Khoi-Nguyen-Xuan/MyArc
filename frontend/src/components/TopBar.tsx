@@ -31,7 +31,7 @@ export default function TopBar({ variant = 'top' }: TopBarProps) {
             to={to}
             end
             className={({ isActive }) =>
-              `mono dash-nav-link${isActive ? ' dash-nav-link-active' : ''}`
+              `dash-nav-link${isActive ? ' dash-nav-link-active' : ''}`
             }
           >
             {label}
