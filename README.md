@@ -8,9 +8,10 @@ The results are presented visually through **course rankings, workload calendars
 
 **MyArc prioritizes visualization.** 
 
-## Demo
+## Demo 🎬
 
-> 🎬 Demo video coming soon.
+Please watch the demo here: https://youtu.be/Ban_K47uErk
+
 
 **What the demo shows**
 1. Add a course: type the course code, pick the term, upload the syllabus (PDF or .docx)
