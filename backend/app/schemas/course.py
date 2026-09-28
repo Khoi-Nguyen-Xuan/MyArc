@@ -47,3 +47,7 @@ class CourseResponse(BaseModel):
     ranking: str | None = None
     point: float | None = None
     confidence: float | None = None
+    # recommended study hours per week outside class; None for courses analyzed
+    # before these columns existed and not backfilled
+    weekly_hours_min: int | None = None
+    weekly_hours_max: int | None = None

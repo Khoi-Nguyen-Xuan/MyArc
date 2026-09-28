@@ -25,4 +25,6 @@ class DashboardCurrentStateResponse(BaseModel):
     priority_course: str
     busiest_upcoming_week: str
     current_course_tracking: int
+    # assessments the syllabus gave no date for; they can't be placed on the calendar
+    undated_assessments: int = 0
     upcoming_weeks: list[WeekEntry]

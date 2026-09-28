@@ -28,6 +28,10 @@ class Course(Base):
     continious_study_requirement = Column(Float)
     student_review = Column(Float)
 
+    # recommended study time outside class, hours per week (a range)
+    weekly_hours_min = Column(Integer)
+    weekly_hours_max = Column(Integer)
+
     summary = Column(Text)
     reasoning = Column(Text)
     ranking = Column(String)

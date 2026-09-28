@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.course_codes import normalize_course_title
 from app.models.course import Course
 from app.schemas.dashboard import (
     CourseTestItem,
@@ -23,26 +24,60 @@ def _parse_assessment_date(raw) -> date | None:
     return None
 
 
+WEEKS_SHOWN = 8
+
+
 def get_current_state(db: Session, user_id: int) -> DashboardCurrentStateResponse:
     courses = db.query(Course).filter(Course.user_id == user_id).all()
     today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    window_end = this_monday + timedelta(weeks=WEEKS_SHOWN)  # exclusive
 
     # flatten every course's assessments into (course_name, type, score_percent, date),
-    # keeping only today-or-later ones
+    # keeping only the ones due in the next WEEKS_SHOWN weeks (today included)
     flat: list[dict] = []
+    undated = 0
     for course in courses:
         for item in course.assessments or []:
             item_date = _parse_assessment_date(item.get("date"))
-            if item_date is None or item_date < today:
+            if item_date is None:
+                undated += 1
+                continue
+            if item_date < today or item_date >= window_end:
                 continue
             flat.append(
                 {
-                    "course_name": course.course_name or "Untitled course",
+                    "course_name": normalize_course_title(course.course_name or "") or "Untitled course",
                     "type": item.get("type", "assessment"),
                     "score_percent": item.get("score_percent", 0.0),
                     "date": item_date,
                 }
             )
+
+    # always return WEEKS_SHOWN consecutive Mon-Sun weeks, empty ones included,
+    # so the frontend can draw a continuous 8-week strip
+    by_week: dict[date, dict[date, list[dict]]] = defaultdict(lambda: defaultdict(list))
+    for entry in flat:
+        d = entry["date"]
+        by_week[d - timedelta(days=d.weekday())][d].append(entry)
+
+    week_entries: list[WeekEntry] = []
+    for i in range(WEEKS_SHOWN):
+        week_start = this_monday + timedelta(weeks=i)
+        days = by_week.get(week_start, {})
+        date_entries = [
+            DateEntry(
+                date=d,
+                course_test=[
+                    CourseTestItem(course_name=e["course_name"], type=e["type"], score_percent=e["score_percent"])
+                    for e in days[d]
+                ],
+            )
+            for d in sorted(days)
+        ]
+        week_entries.append(
+            WeekEntry(start_date=week_start, end_date=week_start + timedelta(days=6), dates=date_entries)
+        )
 
     if not flat:
         return DashboardCurrentStateResponse(
@@ -50,39 +85,21 @@ def get_current_state(db: Session, user_id: int) -> DashboardCurrentStateRespons
             priority_course="",
             busiest_upcoming_week="",
             current_course_tracking=len(courses),
-            upcoming_weeks=[],
+            undated_assessments=undated,
+            upcoming_weeks=week_entries,
         )
 
-    # group into Mon-Sun weeks, then by exact date within each week
-    weeks: dict[date, dict[date, list[dict]]] = defaultdict(lambda: defaultdict(list))
-    for entry in flat:
-        d = entry["date"]
-        week_start = d - timedelta(days=d.weekday())
-        weeks[week_start][d].append(entry)
+    # busiest = most grade weight due in one week
+    def week_weight(week: WeekEntry) -> float:
+        return sum(t.score_percent for de in week.dates for t in de.course_test)
 
-    week_entries: list[WeekEntry] = []
-    for week_start in sorted(weeks.keys()):
-        week_end = week_start + timedelta(days=6)
-        date_entries = []
-        for d in sorted(weeks[week_start].keys()):
-            course_tests = [
-                CourseTestItem(
-                    course_name=e["course_name"],
-                    type=e["type"],
-                    score_percent=e["score_percent"],
-                )
-                for e in weeks[week_start][d]
-            ]
-            date_entries.append(DateEntry(date=d, course_test=course_tests))
-        week_entries.append(WeekEntry(start_date=week_start, end_date=week_end, dates=date_entries))
-
-    busiest = max(week_entries, key=lambda w: sum(len(de.course_test) for de in w.dates))
-    busiest_count = sum(len(de.course_test) for de in busiest.dates)
+    busiest = max(week_entries, key=week_weight)
+    busiest_weight = week_weight(busiest)
     busiest_str = f"{busiest.start_date.isoformat()} to {busiest.end_date.isoformat()}"
 
-    if busiest_count >= 3:
+    if busiest_weight >= 0.25:
         overload = "High"
-    elif busiest_count >= 1:
+    elif busiest_weight >= 0.10:
         overload = "Medium"
     else:
         overload = "Low"
@@ -95,5 +112,6 @@ def get_current_state(db: Session, user_id: int) -> DashboardCurrentStateRespons
         priority_course=soonest["course_name"],
         busiest_upcoming_week=busiest_str,
         current_course_tracking=len(courses),
+        undated_assessments=undated,
         upcoming_weeks=week_entries,
     )

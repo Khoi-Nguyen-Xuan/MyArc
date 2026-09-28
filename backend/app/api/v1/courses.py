@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -67,3 +67,14 @@ def get_course(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
     return course_service.course_to_response(course)
+
+
+@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if not course_service.delete_course(db, user.id, course_id):
+        raise HTTPException(status_code=404, detail="Course not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

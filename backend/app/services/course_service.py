@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.evaluator.schemas import Criterion, CourseEvaluation
 from app.agents.syllabus.schemas import SyllabusResult
+from app.core.course_codes import normalize_course_code, normalize_course_title
 from app.models.course import Course
 from app.schemas.course import CourseResponse
 from app.services.course_analysis import CourseAnalysis, analyze_syllabus
@@ -39,9 +40,9 @@ def _to_columns(analysis: CourseAnalysis) -> dict:
     syllabus, evaluation = analysis.syllabus, analysis.evaluation
     return {
         "course_semester": syllabus.term or syllabus.request.term,
-        "course_name": syllabus.course_title,
+        "course_name": normalize_course_title(syllabus.course_title) if syllabus.course_title else None,
         "professor_name": ", ".join(syllabus.instructors) or None,
-        "course_code": evaluation.course_code,
+        "course_code": normalize_course_code(evaluation.course_code) if evaluation.course_code else None,
         "assessments": _assessments(syllabus),
         "evidence": _evidence(evaluation),
         "short_review": evaluation.short_review,
@@ -55,6 +56,8 @@ def _to_columns(analysis: CourseAnalysis) -> dict:
         "ranking": evaluation.ranking.value,
         "point": _out_of_10(evaluation.point),
         "confidence": round(evaluation.confidence * 10, 1),
+        "weekly_hours_min": evaluation.weekly_hours.min,
+        "weekly_hours_max": evaluation.weekly_hours.max,
     }
 
 
@@ -119,13 +122,24 @@ def get_course(db: Session, user_id: int, course_id: int) -> Course | None:
     )
 
 
+def delete_course(db: Session, user_id: int, course_id: int) -> bool:
+    """Delete one of the user's courses. Returns False when it doesn't exist."""
+    course = get_course(db, user_id, course_id)
+    if not course:
+        return False
+    db.delete(course)
+    db.commit()
+    return True
+
+
 def course_to_response(course: Course) -> CourseResponse:
     return CourseResponse(
         id=course.id,
         course_semester=course.course_semester,
-        course_name=course.course_name,
+        # normalized on read too, so rows saved before normalization look the same
+        course_name=normalize_course_title(course.course_name) if course.course_name else None,
         professor_name=course.professor_name,
-        course_code=course.course_code,
+        course_code=normalize_course_code(course.course_code) if course.course_code else None,
         evaluate=course.assessments or [],
         short_review=course.short_review,
         workload=course.workload,
@@ -139,4 +153,6 @@ def course_to_response(course: Course) -> CourseResponse:
         ranking=course.ranking,
         point=course.point,
         confidence=course.confidence,
+        weekly_hours_min=course.weekly_hours_min,
+        weekly_hours_max=course.weekly_hours_max,
     )
