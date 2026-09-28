@@ -118,15 +118,13 @@ def build_reddit_source(
 
 async def read_with_tavily(search: SearchClient, urls: list[str]) -> list[ExtractedPage]:
     """
-    Read pages through Tavily a few at a time, then retry the failures once.
+    Read pages through Tavily a few at a time. Pages that fail are skipped, not retried:
+    Reddit keeps blocking a page it blocked once, so the retry cost ~25s and rarely
+    recovered anything (timing logs, Sep 2026).
     """
     pages, failed = await _tavily_pass(search, urls)
     if failed:
-        logger.info("Could not read %d pages, retrying once: %s", len(failed), failed)
-        retried, failed = await _tavily_pass(search, failed)
-        pages.extend(retried)
-    if failed:
-        logger.info("Gave up on %d pages: %s", len(failed), failed)
+        logger.info("Could not read %d pages, skipping them: %s", len(failed), failed)
     return pages
 
 
