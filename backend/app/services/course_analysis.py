@@ -1,13 +1,12 @@
 """Runs the agents on one uploaded syllabus.
 
-When the student typed the course code, research doesn't need the syllabus,
-so the two run at the same time:
+Cur: Student provides the course code: research doesn't need the syllabus so the two can run at the same time:
 
     file -> syllabus agent --+
                              +-> evaluator -> CourseAnalysis
     code -> research agent --+
 
-Without a typed code, research waits for the code the syllabus agent finds:
+Prev: research waits for the code the syllabus agent finds:
 
     file -> syllabus agent -> research agent -> evaluator -> CourseAnalysis
 """
@@ -36,16 +35,14 @@ from app.utils.documents import load_document
 
 logger = logging.getLogger(__name__)
 
-LLM_TIMEOUT_SECONDS = 180  # a long syllabus takes the LLM a while to read
+LLM_TIMEOUT_SECONDS = 180 
 
 
 class AnalysisError(Exception):
     """The syllabus can't be analyzed. The message is written to be shown to the users."""
 
-
 class SetupError(Exception):
     """The server is missing an API key"""
-
 
 @dataclass(frozen=True, slots=True)
 class CourseAnalysis:
@@ -62,7 +59,7 @@ async def analyze_syllabus(
     term: str | None = None,
 ) -> CourseAnalysis:
     """Analyze one course. Raises DocumentError or AnalysisError (student's file), SetupError (server)."""
-    _require_keys()
+    _require_keys() #-> Setup error immediately if no API key 
     timer = StageTimer(file_name)
     with timer.stage("load document"):
         document = load_document(data, file_name)
@@ -86,8 +83,6 @@ async def analyze_syllabus(
             return await _research(llm, request)
 
     if syllabus_request.course_code:
-        # typed code: both at once. The TaskGroup cancels research if the syllabus fails.
-        # Research only knows the code and term here (no title or professor from the syllabus).
         typed = ResearchRequest(course_code=syllabus_request.course_code, term=syllabus_request.term)
         with timer.stage("syllabus + research (parallel)"):
             try:
@@ -95,8 +90,6 @@ async def analyze_syllabus(
                     syllabus_task = group.create_task(read_syllabus())
                     research_task = group.create_task(research(typed))
             except ExceptionGroup as failed:
-                # re-raise the real error (DocumentError, AnalysisError, ...) so the
-                # endpoint can still turn it into the right message for the student
                 raise failed.exceptions[0] from None
         syllabus = syllabus_task.result()
         research_result, research_warnings = research_task.result()
@@ -116,18 +109,17 @@ async def analyze_syllabus(
 
 
 def _research_request(syllabus: SyllabusResult) -> ResearchRequest:
-    """Research what the syllabus agent found: code, title and (when unambiguous) the professor."""
+    """Research what the syllabus agent found: code, title and the professor."""
     return ResearchRequest(
         course_code=syllabus.request.course_code,
         course_title=syllabus.course_title,
-        # Only search a professor's name when we know it's the student's; a list could be all sections.
         professor=syllabus.instructors[0] if len(syllabus.instructors) == 1 else None,
         term=syllabus.term or syllabus.request.term,
     )
 
 
 async def _research(llm: BaseChatModel, request: ResearchRequest) -> tuple[ResearchResult, list[str]]:
-    """What students say about the course. A search outage gives an empty result, not a failed upload."""
+    """What students say about the course."""
     search = SearchClient(settings.tavily_api_key)
     reddit = build_reddit_source(
         search,
