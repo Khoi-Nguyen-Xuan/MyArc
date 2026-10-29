@@ -51,6 +51,24 @@ class Facts:
 
 
 def build_facts(syllabus: SyllabusResult, research: ResearchResult, computed: list[CriterionScore]) -> Facts:
+    """
+    Example of a return:
+    Course: CMPUT 201 - Practical Prog Methodology (Fall 2026)
+
+    Syllabus facts:
+    [S1] Quizzes: 9 x 2% (quiz), no dates given; lowest dropped
+    [S2] Midterm: 25% (midterm), 2026-10-15
+    [S3] Policy (late_work): No late submissions are accepted.
+    
+    Scores our code computed from these facts (0-100):
+    - deadline_pressure: 92.3. 12 graded items over the term (...)
+    - ...
+    
+    Student claims from Reddit:
+    [R1] (workload, harder, relevance 1.0, posted 2025-03) Labs take 10+ hours a week.
+    [R2] ...
+    """
+    
     evidence: dict[str, EvidenceItem] = {}
     title = f" - {syllabus.course_title}" if syllabus.course_title else ""
     lines = [f"Course: {syllabus.request.course_code}{title} ({syllabus.term or syllabus.request.term or 'term unknown'})"]
@@ -88,6 +106,7 @@ def build_facts(syllabus: SyllabusResult, research: ResearchResult, computed: li
 
 
 async def ask_for_judgment(llm: BaseChatModel, facts: Facts) -> Judgment:
+    """Call LLM to judge and provide fact to cite"""
     judge = llm.with_structured_output(Judgment)
     return await judge.ainvoke([SystemMessage(_system_prompt()), HumanMessage(facts.text)])
 
@@ -104,6 +123,7 @@ def to_scores(judgment: Judgment, facts: Facts) -> tuple[list[CriterionScore], W
 
 
 def _to_score(criterion: Criterion, judged: JudgedCriterion, facts: Facts) -> CriterionScore:
+    """The LLM cites ids like ["S3", "R7"], never the evidence text => Code looks each id up in fact dictionary """
     cited = dict.fromkeys(fact_id.strip().strip("[]").upper() for fact_id in judged.evidence_ids)
     return CriterionScore(
         criterion=criterion,
