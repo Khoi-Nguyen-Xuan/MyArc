@@ -1,11 +1,12 @@
-"""Checks on an extracted syllabus that need no LLM.
+"""Checks on an extracted syllabus.
 
 Each check describes what's wrong in plain words. The agent sends those
-problems back to the LLM for one repair; whatever is still wrong afterwards
+problems back to the LLM for ONE repair; whatever is still wrong afterwards
 is shown to the student as a warning.
 
-One check also corrects something itself: page numbers come from where each
-quote is actually found in the document, not from the LLM.
+There are two kinds of output:
+- problems (weights, dates): sending back to the LLM for one repair
+- notes (unmatched quotes): only reported, never repaired
 """
 
 from __future__ import annotations
@@ -16,8 +17,8 @@ from datetime import date
 from app.agents.syllabus.schemas import SourceRef, SyllabusResult
 from app.utils.documents import Document
 
-# When each term runs, with some slack for early starts and final exams:
-# first day, last day, and which year of an academic year like "2026-2027" it falls in.
+# When each term runs:
+# first day, last day, and which year of an academic year it falls in.
 _TERMS = {
     "fall": ((8, 15), (12, 31), "first"),
     "winter": ((1, 1), (4, 30), "last"),
@@ -77,7 +78,7 @@ def _verify_quotes(result: SyllabusResult, document: Document) -> tuple[Syllabus
 
 
 def _locate(quote: str, parts: list[tuple[int | None, str]]) -> tuple[bool, int | None]:
-    """Is the quote in the document, and on which page? A quote shortened with "..." matches piece by piece."""
+    """Is the quote in the document, and on which page?"""
     pieces = [piece for piece in (_normalize(piece) for piece in _ELLIPSIS.split(quote)) if piece]
     if not pieces:
         return False, None
@@ -93,7 +94,7 @@ def _normalize(text: str) -> str:
 
 
 def _check_weights(result: SyllabusResult) -> list[str]:
-    """Under 100% usually means an assessment was missed. Over 100% is extra credit, which is fine."""
+    """Under 100% -> an assessment was missed. Over 100% is fine"""
     if not result.assessments:
         return ["No graded assessments were found."]
     total = round(result.total_weight, 1)
@@ -103,8 +104,8 @@ def _check_weights(result: SyllabusResult) -> list[str]:
 
 
 def _check_dates(result: SyllabusResult) -> list[str]:
-    """A date outside the term is usually the wrong year. The student's own term wins over the syllabus's."""
-    term = result.request.term or result.term
+    """A date outside the term is usually the wrong year."""
+    term = result.request.term or result.term # The student's own term wins over the syllabus's.
     window = term_window(term)
     if window is None:
         return []
