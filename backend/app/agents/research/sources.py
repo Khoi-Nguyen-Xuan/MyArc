@@ -1,12 +1,9 @@
-"""Reddit's official API if have credentials, Tavily otherwise.
-
-Both classes implement `RedditSource`, so the graph never knows which one it
-is using.
+"""Reddit's official API or Tavily.
 
 |                       | RedditApiSource             | TavilyRedditSource (fallback)  |
 |-----------------------|-----------------------------|--------------------------------|
 | finds threads with    | Reddit's own search         | Tavily web search on reddit.com|
-| reads threads with    | Reddit's JSON API           | Tavily extract (often blocked) |
+| reads threads with    | Reddit's JSON API           | Tavily extract                 |
 | post dates            | exact                       | none                           |
 """
 
@@ -22,7 +19,7 @@ from app.external.search_client import ExtractedPage, SearchClient, SearchClient
 
 logger = logging.getLogger(__name__)
 
-# Errors that mean "this fetch failed", as opposed to a bug in our code.
+# Errors that mean "this fetch failed"
 FETCH_ERRORS = (SearchClientError, RedditClientError)
 
 TAVILY_PAGES_PER_CALL = 2 
@@ -52,11 +49,11 @@ class RedditApiSource:
     def __init__(self, client: RedditClient, *, max_comments: int = 60, max_parallel: int = 4) -> None:
         self._client = client
         self._max_comments = max_comments
-        self._max_parallel = max_parallel  # stays well under Reddit's ~100 requests per minute
+        self._max_parallel = max_parallel  # under Reddit's ~100 requests per minute
 
     async def find_threads(self, subreddit: str | None, query: str, limit: int) -> list[SearchHit]:
         posts = await self._client.search(subreddit or "all", query, limit=limit)
-        answered = [post for post in posts if post.num_comments > 0]  # unanswered questions carry no evidence
+        answered = [post for post in posts if post.num_comments > 0]  # unanswered questions are dropped
         # Reddit returns results by relevance. Turn the rank into a 0-1 score so `choose_pages` keeps that order.
         return [
             SearchHit(url=post.url, title=post.title, snippet="", score=1.0 - rank / (len(answered) + 1))
@@ -94,13 +91,14 @@ class TavilyRedditSource:
 
     async def find_threads(self, subreddit: str | None, query: str, limit: int) -> list[SearchHit]:
         prefix = f"r/{subreddit} " if subreddit else ""
+        #Tavily web search restricted to reddit.com, with “r/uAlberta” added to the query
         return await self._search.search(f"{prefix}{query}", max_results=limit, include_domains=["reddit.com"])
 
     async def read_threads(self, urls: list[str]) -> list[ExtractedPage]:
         return await read_with_tavily(self._search, urls)
 
     async def aclose(self) -> None:
-        pass  # the Tavily client holds no open connections
+        pass  
 
 
 def build_reddit_source(
@@ -110,7 +108,7 @@ def build_reddit_source(
     client_id: str | None,
     client_secret: str | None,
 ) -> RedditSource:
-    """Use the Reddit API when all three settings are present, otherwise fall back to Tavily."""
+    """Use the Reddit API if possible, otherwise Tavily."""
     if user_agent and client_id and client_secret:
         return RedditApiSource(RedditClient(user_agent, client_id, client_secret))
     return TavilyRedditSource(search)
@@ -118,9 +116,8 @@ def build_reddit_source(
 
 async def read_with_tavily(search: SearchClient, urls: list[str]) -> list[ExtractedPage]:
     """
-    Read pages through Tavily a few at a time. Pages that fail are skipped, not retried:
-    Reddit keeps blocking a page it blocked once, so the retry cost ~25s and rarely
-    recovered anything (timing logs, Sep 2026).
+    Read pages through Tavily a FEW at a time. Pages that fail are skipped:
+    Reddit keeps blocking a page it blocked once, so the retry cost ~25s
     """
     pages, failed = await _tavily_pass(search, urls)
     if failed:
@@ -135,7 +132,7 @@ async def _tavily_pass(search: SearchClient, urls: list[str]) -> tuple[list[Extr
     for start in range(0, len(urls), TAVILY_PAGES_PER_CALL):
         batch_urls = urls[start : start + TAVILY_PAGES_PER_CALL]
         try:
-            # "advanced": Reddit blocks the basic fetcher entirely.
+            # Reddit blocks the basic fetcher entirely -> use advanced
             batch = await search.extract(batch_urls, depth="advanced")
         except SearchClientError as exc:
             logger.warning("Page extraction failed for %s: %s", batch_urls, exc)
