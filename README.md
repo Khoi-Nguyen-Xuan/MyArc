@@ -120,7 +120,5 @@ After the parallel change, the Syllabus and Research rows overlap, so they no lo
 
 **AI**
 - LLM structured outputs
-- RAG
-- Embeddings
 - Multi-agent orchestration
 - External web research
