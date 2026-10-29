@@ -1,17 +1,13 @@
 """Decides which web searches for the researcher.
 
-The searches are templates, not LLM-written => free, predictablE
+The searches are templates, not LLM-written => predictable
 
-The rounds work like this:
-
-- Round 1: searches in the university's subreddit (Reddit API or Tavily, see sources.py).
-- Round 2: only runs when round 1 found too few Reddit threads (the graph decides
+The rounds:
+- Round 1: searches in the university's subreddit (Reddit API or Tavily).
+- Round 2: only runs when round 1 found TOO FEW Reddit threads (the graph decides
   that). More Reddit searches with other ways students name the course, plus one
   web search for student review sites. Official pages and course-document sites
-  are excluded: the syllabus agent covers what the course IS; the researcher
-  wants what students SAY about it.
-- Revision pass: when the Critic asks for specific follow-up searches, only
-  those run.
+  are EXCLUDED.
 """
 
 from __future__ import annotations
@@ -21,7 +17,6 @@ from collections.abc import Iterable
 from app.agents.research.schemas import ResearchRequest
 from app.agents.research.state import PlannedQuery
 
-# SUPPORT UNIVERSITY OF ALBERTA FOR NOW
 SUBREDDITS: dict[str, str] = {
     "University of Alberta": "uAlberta",
 }
@@ -64,7 +59,7 @@ def _targeted_queries(request: ResearchRequest) -> list[PlannedQuery]:
 def _broader_queries(request: ResearchRequest) -> list[PlannedQuery]:
     code = request.course_code
     queries = [
-        _reddit(request, code.replace(" ", "")),  # students often write "MATH214"
+        _reddit(request, code.replace(" ", "")),
         _reddit(request, f"{code} exam"),
     ]
     if request.course_title:
@@ -76,7 +71,7 @@ def _broader_queries(request: ResearchRequest) -> list[PlannedQuery]:
 
 
 def _reddit(request: ResearchRequest, text: str) -> PlannedQuery:
-    """A Reddit search. Without a known subreddit it runs across all of Reddit, so name the university."""
+    """A Reddit search"""
     scope = "" if subreddit_for(request.university) else f"{request.university} "
     return PlannedQuery(f"{scope}{text}", "reddit")
 
@@ -88,7 +83,7 @@ def excluded_web_domains(university: str) -> list[str]:
 
 
 def subreddit_for(university: str) -> str | None:
-    """Return "uAlberta" for the University of Alberta, or None for a school we don't know yet."""
+    """Return "uAlberta" for the University of Alberta."""
     return SUBREDDITS.get(university)
 
 
