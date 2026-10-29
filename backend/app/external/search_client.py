@@ -1,11 +1,8 @@
-"""A thin wrapper around Tavily web search and page extraction.
+"""Wrapper around Tavily web search and page extraction.
 
-Agents in our graph will never talk to Tavily directly. They call `SearchClient` function, which:
-
-- returns small typed objects (`SearchHit`, `ExtractedPage`) instead of raw
-  Tavily dicts, so a change in Tavily's response shape breaks this file only;
-- turns every Tavily/ network failure into one `SearchClientError`, so
-  callers have a single exception to handle.
+Agents in graph call `SearchClient` function, which:
+- returns small typed objects (`SearchHit`, `ExtractedPage`) instead of raw Tavily dicts
+- turns every Tavily/ network failure into one `SearchClientError`, so callers have a single exception to handle.
 """
 
 from __future__ import annotations
@@ -21,7 +18,7 @@ from tavily import errors as tavily_errors
 
 MAX_URLS_PER_EXTRACT = 20
 
-SearchDepth = Literal["basic", "advanced"]  # "advanced" costs 2 credits instead of 1
+SearchDepth = Literal["basic", "advanced"]
 
 _TAVILY_FAILURES = (
     tavily_errors.BadRequestError,
@@ -40,7 +37,7 @@ class SearchClientError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class SearchHit:
-    """One search result: enough to decide whether the page is worth reading in full."""
+    """One search result: enough to decide whether the page is worth reading."""
     url: str
     title: str
     snippet: str
@@ -65,7 +62,6 @@ class ExtractionBatch:
 
 class SearchClient:
     def __init__(self, api_key: str, *, timeout_seconds: float = 30.0) -> None:
-        # Without a key the Tavily SDK silently falls back to a rate-limited "keyless" mode
         if not api_key:
             raise ValueError("TAVILY_API_KEY is not set.")
         self._tavily = AsyncTavilyClient(api_key=api_key)
@@ -104,10 +100,8 @@ class SearchClient:
         ]
 
     async def extract(self, urls: Sequence[str], *, depth: SearchDepth = "basic") -> ExtractionBatch:
-        """Fetch the full text of up to 20 pages in one call.
-
-        "advanced" gets through sites that block the basic fetcher (Reddit does),
-        at 2 credits per 5 pages instead of 1.
+        """
+        Fetch the full text of up to 20 pages in one call.
         """
         if not urls:
             return ExtractionBatch(pages=[], failed_urls=[])
