@@ -1,4 +1,4 @@
-"""The Research LangGraph graph.
+"""The Research LangGraph graph: 
 
     START -> plan_searches -> search_web -> read_pages
                   ^                             |  one Send per page (parallel)
@@ -21,7 +21,7 @@ from app.agents.research.state import PageTask, ResearchContext, ResearchState
 
 
 def fan_out_pages(state: ResearchState) -> list[Send] | str:
-    """Send each page to its own `extract_claims` branch, or skip ahead when there are none."""
+    """Send each page to its own `extract_claims` branch, OR skip ahead when there are none."""
     if not state["pages"]:
         return "review_round"
 
