@@ -7,8 +7,6 @@ Downstream:
 - the calendar and weekly-workload view use each assessment's due dates;
 - the Evaluator uses the weights and policies to score exam pressure,
   deadline density and so on;
-- the "Why?" drawer shows `source.quote` so a student can see where a fact
-  came from.
 
 Weights above 100% are normal: some courses offer extra marks on purpose
 (CMPUT 201 adds up to 104%). Only totals below 100% get a warning.
@@ -26,7 +24,10 @@ from app.core.course_codes import normalize_course_code
 
 
 class AssessmentKind(StrEnum):
-    """What kind of graded work an assessment is."""
+    """
+    What kind of graded work an assessment is.
+    Purposes: restricts the LLM to a fixed list => can't make up a type of assignment 
+    """
 
     ASSIGNMENT = "assignment"
     LAB = "lab"
@@ -36,12 +37,12 @@ class AssessmentKind(StrEnum):
     PROJECT = "project"
     PAPER = "paper"  # essays, term papers, reports
     PRESENTATION = "presentation"
-    PARTICIPATION = "participation"  # attendance, clickers, discussion posts
+    PARTICIPATION = "participation"  # attendance, clickers, discussion posts,...
     OTHER = "other"
 
 
 class PolicyTopic(StrEnum):
-    """Course rules that change how stressful a course is."""
+    """Course rules that change how "stressful" a course is."""
 
     LATE_WORK = "late_work"  # "No late submissions are accepted."
     MISSED_EXAM = "missed_exam"  # "No deferred midterm; its weight moves to the final."
@@ -51,18 +52,19 @@ class PolicyTopic(StrEnum):
 
 
 class SyllabusRequest(BaseModel):
-    """What the agent knows before reading the file"""
+    """What the agent knows BEFORE reading the file"""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
     course_code: str = Field(
-        description='The code the student added the syllabus under, e.g. "BIOIN 301". '
+        description='The code the student added the syllabus under, e.g. "CMPUT 301". '
     )
     term: str | None = Field(default=None, description='The study term, e.g. "Fall 2026".')
 
     @field_validator("course_code")
     @classmethod
     def normalize_code(cls, value: str) -> str:
+        """ Turn cmput 301 into CMPUT 301""" 
         return normalize_course_code(value)
 
 
@@ -76,9 +78,9 @@ class SourceRef(BaseModel):
 class Assessment(BaseModel):
     """One graded component"""
 
-    name: str = Field(description='As the syllabus names it, e.g. "Quizzes" or "Midterm #1".')
+    name: str = Field(description='As the syllabus names it (OG), e.g. "Quizzes" or "Midterm #1".')
     kind: AssessmentKind
-    count: int = Field(default=1, ge=1, description="How many of them: 9 for nine quizzes.")
+    count: int = Field(default=1, ge=1, description="How many of them: 9 quizzes.")
     weight_each: float = Field(gt=0, le=100, description="Percent of the final grade for ONE item")
     due_dates: list[date] = Field(
         default_factory=list,
@@ -131,5 +133,5 @@ class SyllabusResult(BaseModel):
 
     @property
     def extra_credit(self) -> float:
-        """Percent available beyond 100, e.g. 4 when the weights add up to 104%. Intended by the course."""
+        """Percent available beyond 100"""
         return max(self.total_weight - 100, 0.0)
