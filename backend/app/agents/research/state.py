@@ -1,11 +1,6 @@
-"""State for the research subgraph, plus the run's budget.
+"""State for the research subgraph + run's budget.
 
 LangGraph merges whatever each node returns into `ResearchState`:
-
-- fields wrapped in `Annotated[list[...], operator.add]` ACCUMULATE: every
-  round and every parallel branch appends to them;
-- plain fields are OVERWRITTEN by the last node that wrote them. They hold
-  work-in-progress for the current round only.
 """
 
 from __future__ import annotations
@@ -45,15 +40,13 @@ class ResearchBudget:
 
 @dataclass(frozen=True, slots=True)
 class ResearchContext:
-    """What every node needs but never changes during a run: services and limits.
-
+    """What every node needs: services and limits.
     Passed once through LangGraph's runtime context (`graph.ainvoke(..., context=...)`)
-    instead of being stored in the state, so tests can swap in a fake search client or LLM.
     """
 
     search: SearchClient
     llm: BaseChatModel
-    reddit: RedditSource  # Reddit API, or Tavily until the API app is approved (see sources.py)
+    reddit: RedditSource  # Reddit API, or Tavily
     budget: ResearchBudget = ResearchBudget()
 
 
