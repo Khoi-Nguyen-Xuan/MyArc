@@ -1,7 +1,6 @@
 """The evaluator agent: scores one course from its syllabus and what students say.
 
-    code scores 3 criteria + confidence -> LLM judges the other 3 -> CourseEvaluation
-                                                                      (point and ranking computed)
+    code scores 3 criteria + confidence -> LLM judges the other 3 -> point and rank -> CourseEvaluation
 """
 
 from __future__ import annotations
@@ -17,11 +16,20 @@ from app.core.timing import log_duration
 
 
 async def evaluate_course(llm: BaseChatModel, syllabus: SyllabusResult, research: ResearchResult) -> CourseEvaluation:
+    # code scores 3 criteria
     computed = [deadline_pressure(syllabus), assessment_weighting(syllabus), student_review_difficulty(research)]
+
+    # Enumerate evidence for LLM to cite 
     facts = build_facts(syllabus, research, computed)
+
+    #LLM call for workload, conceptual difficulty, continuous_study 
     with log_duration(f"{syllabus.request.course_code} · evaluator LLM call"):
         judgment = await ask_for_judgment(llm, facts)
+
+    #Code check LLM answer 
     judged, weekly_hours = to_scores(judgment, facts)
+
+    #Code give confidence score 
     trust, reasons = confidence(syllabus, research)
 
     return CourseEvaluation(
