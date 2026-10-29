@@ -1,11 +1,7 @@
 """Contracts for the Researcher agent: define what goes in and what comes out.
 
 Job: The researcher main task is to find what students say about a course on the internet (mainly Reddit) and returns
-*atomic, cited claims* instead of a prose summary. Two agents rely on this shape:
-
-- the Evaluator, which scores the course from the claims, and
-- the Critic, which checks that the claims are recent, about the right
-  professor, and numerous enough to trust.
+*atomic, cited claims* instead of a prose summary. 
 """
 
 from __future__ import annotations
@@ -18,13 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, mod
 
 from app.core.course_codes import normalize_course_code
 
-#We going to trim if the comment/review is longer than this 
+#trim if the comment/review is longer than this 
 MAX_QUOTE_LENGTH = 300
 
 
 class SourceType(StrEnum):
-    """Where a piece of evidence came from."""
-
+    """Where a piece of evidence came from. Code gonna set this"""
+  
     REDDIT = "reddit"
     PROFESSOR_REVIEW = "professor_review"  # e.g. from RateMyProfessors
     UNIVERSITY_PAGE = "university_page"  # official course/ department pages
@@ -62,7 +58,7 @@ class ProfessorMatch(StrEnum):
 
 
 class ResearchRequest(BaseModel):
-    """Everything the researcher needs to know about one course."""
+    """Input: Everything the researcher needs to know about one course."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -90,7 +86,7 @@ class Source(BaseModel):
     source_type: SourceType
     published_at: date | None = Field(
         default=None,
-        description="None when the page shows no date; the Critic treats undated sources as possibly stale.",
+        description="None when the page shows no date;",
     )
 
 
@@ -112,7 +108,7 @@ class EvidenceClaim(BaseModel):
     @field_validator("quote")
     @classmethod
     def trim_quote(cls, value: str | None) -> str | None:
-        """Trim long quotes instead of rejecting them"""
+        """Trim long quotes"""
         if value is None or len(value) <= MAX_QUOTE_LENGTH:
             return value
         return value[: MAX_QUOTE_LENGTH - 1].rstrip() + "…"
@@ -131,7 +127,7 @@ class ResearchResult(BaseModel):
 
     @model_validator(mode="after")
     def claims_cite_known_sources(self) -> Self:
-        """Every claim must point at a page listed in `sources`, or the "Why?" popup can't link it."""
+        """Every claim must point at a page listed in `sources`."""
         known_urls = {str(source.url) for source in self.sources}
         orphans = [str(claim.source_url) for claim in self.claims if str(claim.source_url) not in known_urls]
         if orphans:
