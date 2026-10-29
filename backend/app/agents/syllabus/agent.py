@@ -1,11 +1,7 @@
-"""The syllabus agent: read a syllabus, check the answer, and repair it once if needed.
+"""
+The syllabus agent: read a syllabus, check the answer, and repair it once if needed.
 
-    ask the LLM -> convert and check -> any problems? -> ask again with the problems listed
-                                                      -> keep whichever answer has fewer problems
-
-Quotes that can't be matched in the text are only noted, never repaired (see checks.py).
-
-A plain function rather than a LangGraph graph: it's a straight line with one retry.
+Flow: ask the LLM -> convert and check -> any problems? -> ask again with the problems listed
 """
 
 from __future__ import annotations
@@ -52,7 +48,7 @@ def _review(
     request: SyllabusRequest,
     document: Document,
 ) -> tuple[SyllabusResult, list[str], list[str]]:
-    """Convert the LLM's answer, then check it.
+    """Convert the LLM's answer, and check it.
 
     Returns the result, the problems worth one repair, and notes (unmatched quotes) that aren't.
     """
