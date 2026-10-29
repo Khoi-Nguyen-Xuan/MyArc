@@ -79,8 +79,7 @@ _EXTRA_BLANK_LINES = re.compile(r"\n{3,}")
 def strip_markup(page: ExtractedPage) -> ExtractedPage:
     """Remove images and link targets, which are most of a Reddit page's menus and buttons.
 
-    "[Log In](https://www.reddit.com/login/)" becomes "Log In". This runs before
-    `truncate`, so the character budget is spent on what people wrote, not on URLs.
+    "[Log In](https://www.reddit.com/login/)" becomes "Log In".
     """
     text = _MARKDOWN_IMAGE.sub("", page.content)
     text = _MARKDOWN_LINK.sub(r"\1", text)
