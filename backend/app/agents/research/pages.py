@@ -12,15 +12,15 @@ from app.external.search_client import ExtractedPage, SearchHit
 # versions of a site that show the same page.
 _HOST_PREFIXES = ("www.", "old.", "new.", "m.", "np.")
 
-# Reddit only lets Tavily's fetcher in on the www. host, so every Reddit mirror maps there.
+# Reddit only lets Tavily's fetcher in on the www. host
 REDDIT_HOST = "www.reddit.com"
 
 
 def normalize_url(url: str) -> str:
     """Give one page one URL => same thread found by two searches is read only once.
 
-    https://old.reddit.com/r/uAlberta/comments/abc/title/?utm_source=x#top
-    becomes https://www.reddit.com/r/uAlberta/comments/abc/title
+       https://old.reddit.com/r/uAlberta/comments/abc/title/?utm_source=x#top
+    => https://www.reddit.com/r/uAlberta/comments/abc/title
     """
     parts = urlsplit(url.strip())
     host = parts.netloc.lower()
@@ -55,7 +55,7 @@ def is_worth_reading(url: str) -> bool:
 
 
 def choose_pages(hits: Iterable[SearchHit], *, already_seen: Iterable[str], limit: int) -> list[SearchHit]:
-    """Pick the best `limit` new pages: normalized and deduplicated, Reddit threads first, then by score."""
+    """Pick the best new pages: normalized and deduplicated, Reddit threads first, then by score."""
     seen = set(already_seen)
     best_by_url: dict[str, SearchHit] = {}
 
