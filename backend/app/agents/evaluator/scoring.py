@@ -1,12 +1,12 @@
 """The criteria scored in code, and the evaluation's confidence.
 
 These three criteria can be counted from the data, so I decide that no LLM is needed: the
-numbers are exact, the same on every run, and easy to explain in the "Why?"
-drawer. Each function returns a `CriterionScore` with its reasoning and evidence.
+numbers are exact, the same on every run, and easy to explain in the "Why?" drawer.
+Each function returns a `CriterionScore` with its reasoning and evidence.
 
 - deadline pressure: how many graded items the term has;
 - assessment weighting: how much of the grade rides on midterms and finals;
-- student review difficulty: the balance of "harder" and "easier" student claims.
+- student review difficulty: the ratio balance of "harder" and "easier" student claims.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ EXAM_KINDS = {AssessmentKind.MIDTERM, AssessmentKind.FINAL_EXAM}
 OPINIONS_FOR_FULL_TRUST = 8
 MAX_STUDENT_EVIDENCE = 6
 
-# Confidence: how many Reddit threads with claims count as "well covered".
+# Confidence: how many Reddit threads with claims.
 THREADS_FOR_FULL_COVERAGE = 5
 
 
@@ -42,7 +42,8 @@ def deadline_pressure(syllabus: SyllabusResult) -> CriterionScore:
 
 
 def assessment_weighting(syllabus: SyllabusResult) -> CriterionScore:
-    """The share of the grade from midterms and finals.
+    """
+    The share of the grade from midterms and finals.
     Divided by the syllabus's own total
     """
     exams = [assessment for assessment in syllabus.assessments if assessment.kind in EXAM_KINDS]
@@ -58,9 +59,8 @@ def assessment_weighting(syllabus: SyllabusResult) -> CriterionScore:
 
 
 def student_review_difficulty(research: ResearchResult) -> CriterionScore:
-    """The relevance-weighted share of "harder"/ total "harder" and "easier" claims.
-
-    Neutral claims don't count. With few opinions the score is pulled toward 50.
+    """
+    The relevance-weighted share of "harder"/ total "harder" and "easier" claims. Neutral claims don't count.
     """
     opinions = [claim for claim in research.claims if claim.signal is not Signal.NEUTRAL]
     harder = sum(claim.relevance for claim in opinions if claim.signal is Signal.HARDER)
@@ -94,12 +94,11 @@ def student_review_difficulty(research: ResearchResult) -> CriterionScore:
 def confidence(syllabus: SyllabusResult, research: ResearchResult) -> tuple[float, list[str]]:
     """How much to trust the evaluation, 0-1, and the reasons it isn't higher.
 
-    Half comes from the syllabus (fewer extraction warnings is better), half from
-    student coverage (distinct Reddit threads with claims).
+    Half comes from the syllabus (fewer extraction warnings is better), half from student coverage (distinct Reddit threads with claims).
     """
     reasons: list[str] = []
 
-    syllabus_quality = 1.0 - min(0.1 * len(syllabus.warnings), 0.5)
+    syllabus_quality = 1.0 - min(0.1 * len(syllabus.warnings), 0.5) # -0.1 per warning
     if not syllabus.assessments:
         syllabus_quality = 0.0
         reasons.append("No graded assessments were found in the syllabus.")
