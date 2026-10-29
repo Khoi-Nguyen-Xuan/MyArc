@@ -2,8 +2,8 @@
 Turns one web page into cited evidence claims, using the LLM API.
 
 The split of work is:
-- the LLM decides what a page SAYS (the claims, their aspect and signal);
-- the code decides what a page IS (its URL, its source type) and what to keep.
+- the LLM decides what a page SAYS (the claims, their aspect and signal) -> understanding the language;
+- the code decides what a page IS (its URL, its source type) and what to keep -> deterministic answer.
 => every claim is guaranteed to point at a real page
 """
 
@@ -32,11 +32,9 @@ from app.external.search_client import ExtractedPage
 
 PROMPT_PATH = Path(__file__).parents[1] / "prompts" / "research_agent.md"
 
-MIN_RELEVANCE = 0.5  # drops claims the LLM itself was unsure belong to this course (0.4 in the prompt's scale)
+MIN_RELEVANCE = 0.5  # drops unsure claim belong to this course
 
-
-# What the LLM returns.
-# structured output needs every field to be required
+# Structureed output that the LLM need to returns
 class ExtractedClaim(BaseModel):
     claim: str
     quote: str | None
@@ -83,7 +81,7 @@ def to_evidence(
     page: ExtractedPage,
     title: str,
 ) -> tuple[Source | None, list[EvidenceClaim]]:
-    """Validate the LLM's output and attach the page's URL to every claim."""
+    """Validate the LLM's output and ATTACH the page's URL to every claim."""
     if not extraction.is_about_course:
         return None, []
 
@@ -100,6 +98,8 @@ def to_evidence(
         for item in extraction.claims
         if item.relevance >= MIN_RELEVANCE and item.claim.strip()
     ]
+
+    #roduced at least one claim (fix) 
     if not claims:
         return None, []
 
@@ -107,7 +107,7 @@ def to_evidence(
         url=page.url,
         title=title,
         source_type=source_type_for(page.url, request.university),
-        published_at=page.published_at or _parse_date(extraction.published_at),  # a real date beats the LLM's reading
+        published_at=page.published_at or _parse_date(extraction.published_at), 
     )
     return source, claims
 
@@ -127,7 +127,7 @@ def source_type_for(url: str, university: str) -> SourceType:
 
 
 def _parse_date(value: str | None) -> date | None:
-    """Accept only a real YYYY-MM-DD date that isn't in the future. Anything else counts as undated."""
+    """Accept only a real YYYY-MM-DD date that isn't in the future."""
     if not value:
         return None
     try:
