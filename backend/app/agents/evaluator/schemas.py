@@ -1,18 +1,11 @@
 """Contracts for the Evaluator agent: what it returns for one course.
 
-The evaluator combines the syllabus agent's `SyllabusResult` (what the course
-IS) with the research agent's `ResearchResult` (what students SAY) into the
-scores the dashboard shows:
+The evaluator: Combines the syllabus agent's `SyllabusResult` (what the course
+IS) with the research agent's `ResearchResult` (what students SAY) into the scores the dashboard shows:
 
-- six criteria, each scored 0-100 (100 = most demanding), with the reasoning
-  and evidence behind it for the "Why?" drawer;
-- the weighted `point` and its S-D `ranking`, both COMPUTED from the six
-  scores with the project's formula;
+- six criteria, each scored 0-100 (100 = most demanding), with the reasoning and evidence behind;
+- the weighted `point` and its S-D `ranking`, both COMPUTED from the six scores with the project's formula;
 - confidence, weekly hours, a one-line review and a short summary.
-
-Three criteria can be counted from the syllabus and student claims, so code
-scores them; the other three need judgment, so the LLM scores them. Each score
-records which one it came from (`scored_by`).
 """
 
 from __future__ import annotations
@@ -33,7 +26,7 @@ class Criterion(StrEnum):
 
 
 class ScoredBy(StrEnum):
-    CODE = "code"  # counted from the data: exact and repeatable
+    CODE = "code"  # counted from the data
     LLM = "llm"  # judged by the LLM from the evidence
 
 
