@@ -1,14 +1,6 @@
-"""Searches and reads subreddit threads through Reddit's JSON API.
+"""
+Searches and reads subreddit threads through Reddit's JSON API.
 
-Two options:
-- OAuth (production): with REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET, calls
-  oauth.reddit.com with an app-only token. About 100 requests per minute.
-- Public (development only): without credentials, calls www.reddit.com/....json.
-  Heavily rate-limited (about 10 requests per minute) and not allowed for a
-  production app under Reddit's terms.
-
-Like search_client.py, this returns small typed objects and turns every
-failure into one `RedditClientError`.
 """
 
 from __future__ import annotations
