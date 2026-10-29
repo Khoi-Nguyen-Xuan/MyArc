@@ -1,13 +1,15 @@
 """Reads a whole syllabus and turns the answer into a `SyllabusResult`.
 
-The full text goes to the LLM, not retrieved chunks: a syllabus is 5-15k
-tokens, and extraction has to see every row of the grading table.
+The full text goes to the LLM: around 5-15k tokens (including every row of the grading table) 
 
-The split of work:
-
+The split:
 - the LLM reads the document: which assessments exist, their weights and dates;
-- the code checks the answer's shape: parses dates, applies the contract's
-  rules, and records anything it can't use as a warning instead of failing.
+- the code checks the answer's shape: parses dates, applies the contract's rules, and records warning instead.
+
+Flow: 
+- build_messages(): system prompt + syllabus text
+- ask_for_extraction(): LLM call with structured output -> SyllabusExtraction(loose)
+- to_result(): convert + validate in code -> SyllabusResult (strict) + warnings
 """
 
 from __future__ import annotations
@@ -72,12 +74,13 @@ async def ask_for_extraction(
     previous: SyllabusExtraction | None = None,
     problems: list[str] | None = None,
 ) -> SyllabusExtraction:
-    """Ask the LLM to read the syllabus.
-
-    For a repair, pass its `previous` answer and the `problems` our checks found:
+    """Ask the LLM to read the syllabus """
+    messages = build_messages(request, document)
+  
+    """ 
+    Repair features: pass `previous` answer and the `problems` the checks found:
     the LLM then sees the same syllabus, its own answer, and what to fix.
     """
-    messages = build_messages(request, document)
     if previous is not None:
         messages += [AIMessage(previous.model_dump_json()), HumanMessage(_repair_request(problems or []))]
     extractor = llm.with_structured_output(SyllabusExtraction)
@@ -112,10 +115,9 @@ def to_result(
     *,
     has_pages: bool,
 ) -> tuple[SyllabusResult, list[str]]:
-    """Convert the LLM's answer into the contract.
+    """Convert the LLM's answer into the contract schema.
 
-    An assessment or date that breaks the contract is left out and reported as
-    a problem, instead of failing the whole answer.
+    An assessment or date that breaks the contract is left out and reported as a problem.
     """
     problems: list[str] = []
     assessments: list[Assessment] = []
@@ -146,7 +148,7 @@ def to_result(
     policies = [
         Policy(topic=item.topic, summary=item.summary.strip(), source=_to_source(item.source, has_pages))
         for item in extraction.policies
-        if item.summary.strip()
+        if item.summary.strip() #drop the empty summary policies
     ]
 
     result = SyllabusResult(
