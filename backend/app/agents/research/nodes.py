@@ -1,5 +1,5 @@
 """
-Nodes of the research graph.
+Definition nodes of the research graph.
 """
 
 from __future__ import annotations
@@ -25,15 +25,13 @@ logger = logging.getLogger(__name__)
 async def plan_searches(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:
     """Start a new round, decide which searches it runs."""
     round_number = state["round_number"] + 1
-    planned = plan_queries(state["request"], round_number, state["queries_run"])
+    planned = plan_queries(state["request"], round_number, state["queries_run"]) #A list of PlannedQuery
     return {"round_number": round_number, "planned_queries": planned}
 
 
 async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:
-    """Run this round's searches in parallel and choose which result pages to read.
-
+    """Run this round's searches in parallel and choose which result pages to read. 
     "reddit" searches go to the Reddit source (API or Tavily), "web" searches to Tavily.
-    One failed search is logged and skipped.
     """
     context = runtime.context
     subreddit = subreddit_for(state["request"].university)
@@ -57,7 +55,7 @@ async def search_web(state: ResearchState, runtime: Runtime[ResearchContext]) ->
             failures += 1
             logger.warning("Search failed, skipping it: %s (%s)", query, outcome)
         elif isinstance(outcome, BaseException):
-            raise outcome  # a bug in code
+            raise outcome 
         else:
             hits.extend(outcome)
 
@@ -107,18 +105,17 @@ async def _nothing() -> list:
 
 
 async def extract_claims(task: PageTask, runtime: Runtime[ResearchContext]) -> dict:
-    """Pull claims out of ONE page. The graph runs one copy of this node per page, in parallel.
+    """Pull CLAIMS (comments) out of ONE page. The graph runs one node per page, in parallel.
 
     A page that fails (LLM error, rate limit, malformed output) is logged and skipped:
     """
     page = task["page"]
     try:
-        # these run in parallel, so the round's extract time is the SLOWEST page, not the sum
         with log_duration(f"{task['request'].course_code} · extract claims ({len(page.content)} chars) {page.url}"):
             source, claims = await extract_evidence(runtime.context.llm, task["request"], page, task["title"])
     except Exception as exc:
         if is_setup_error(exc):
-            raise  # bad key or unknown model: every page would fail the same way, so stop the run
+            raise  # bad key or unknown model: stop the run
         logger.warning("Claim extraction failed, skipping page %s: %s: %s", page.url, type(exc).__name__, exc)
         return {"sources": [], "claims": []}
 
@@ -145,11 +142,7 @@ async def review_round(state: ResearchState, runtime: Runtime[ResearchContext]) 
 
 
 def should_search_again(state: ResearchState, context: ResearchContext) -> bool:
-    """Stop when enough Reddit threads gave claims, we ran out of rounds, or finished a Critic revision pass.
-
-    Counts threads, not claims: one long thread can yield 15 claims from two people,
-    while five threads are five separate conversations.
-    """
+    """Stop when enough Reddit threads gave claims OR we ran out of rounds."""
     if _reddit_threads(state) >= context.budget.enough_threads:
         return False
     if state["round_number"] >= context.budget.max_rounds:
@@ -162,7 +155,7 @@ def _reddit_threads(state: ResearchState) -> int:
 
 
 async def assemble_result(state: ResearchState, runtime: Runtime[ResearchContext]) -> dict:
-    """Package everything the run found into the `ResearchResult` contract."""
+    """Package everything into the `ResearchResult` contract."""
     result = ResearchResult(
         request=state["request"],
         sources=state["sources"],
