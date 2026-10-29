@@ -1,7 +1,4 @@
-"""Turns an uploaded PDF or Word file into clean text.
-
-Used by the syllabus agent, whose LLM reads the whole text, and later by RAG,
-which chunks the same parts so every chunk keeps its page number.
+"""Turns an uploaded PDF or Word file into clean text. Used by the syllabus agent. 
 
 - PDF: pypdf's layout mode, which keeps each table row on one line
   ("Quizzes    Quiz    2%*9"). Headers and footers repeated on every page
@@ -24,7 +21,7 @@ import pypdf
 from docx.table import Table
 from pypdf.errors import PyPdfError
 
-MAX_PAGES = 50  # syllabi are rarely over 20 pages; this stops huge uploads from running up LLM costs
+MAX_PAGES = 50  # stops huge uploads 
 HEADER_FOOTER_SHARE = 0.6  # a line found on at least 60% of pages is a header or footer
 
 _DIGITS = re.compile(r"\d+")
@@ -71,13 +68,13 @@ def load_document(data: bytes, file_name: str) -> Document:
 def _read_pdf(data: bytes) -> list[DocumentPart]:
     try:
         reader = pypdf.PdfReader(io.BytesIO(data))
-        if reader.is_encrypted and not reader.decrypt(""):  # many PDFs are "encrypted" with an empty password
+        if reader.is_encrypted and not reader.decrypt(""):
             raise DocumentError("This PDF is password-protected. Upload a copy without a password.")
         if len(reader.pages) > MAX_PAGES:
             raise DocumentError(f"This PDF has {len(reader.pages)} pages. A syllabus should be under {MAX_PAGES}.")
         pages = [_page_text(page) for page in reader.pages]
     except PyPdfError as exc:
-        raise DocumentError("This PDF is damaged and can't be read.") from exc
+        raise DocumentError("This PDF can't be read.") from exc
 
     pages = _drop_headers_and_footers(pages)
     return [DocumentPart(text=_tidy(text), page=number) for number, text in enumerate(pages, start=1)]
@@ -91,7 +88,7 @@ def _page_text(page: pypdf.PageObject) -> str:
 
 
 def _drop_headers_and_footers(pages: list[str]) -> list[str]:
-    """Remove lines that appear on most pages, ignoring spacing and numbers ("1/16" and "6/16" match)."""
+    """Remove lines that appear on most pages."""
     if len(pages) < 3:
         return pages  # too few pages to tell a header from real content
 
@@ -129,13 +126,7 @@ def _read_docx(data: bytes) -> list[DocumentPart]:
 
 
 def _table_text(table: Table) -> str:
-    """One line per row, cells joined by " | ".
-
-    python-docx returns a merged cell once per grid column it spans. Those
-    repeats share the same underlying cell element (`_tc`), so they're skipped
-    by identity. Comparing text instead would wrongly merge two neighbouring
-    cells that both say "30%".
-    """
+    """One line per row, cells joined by " | ". """
     lines = []
     for row in table.rows:
         seen_cells = set()
